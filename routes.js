@@ -2,7 +2,10 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "backend.env") });
+
+require("dotenv").config({
+    path: path.join(__dirname, "backend.env")
+});
 
 const { query } = require("./db");
 const { authenticateToken } = require("./auth");
@@ -27,6 +30,7 @@ function createToken(user) {
             expiresIn: "7d"
         }
     );
+
 }
 
 
@@ -47,7 +51,6 @@ router.post("/customer/register", async (req, res) => {
         } = req.body;
 
 
-        // Validation
         if (!name || !mobile || !password) {
 
             return res.status(400).json({
@@ -58,7 +61,7 @@ router.post("/customer/register", async (req, res) => {
         }
 
 
-        if (!/^[0-9]{10}$/.test(mobile)) {
+        if (!/^[0-9]{10}$/.test(String(mobile))) {
 
             return res.status(400).json({
                 success: false,
@@ -68,7 +71,7 @@ router.post("/customer/register", async (req, res) => {
         }
 
 
-        if (password.length < 6) {
+        if (String(password).length < 6) {
 
             return res.status(400).json({
                 success: false,
@@ -78,12 +81,12 @@ router.post("/customer/register", async (req, res) => {
         }
 
 
-        // Check existing customer
         const existingCustomer = await query(
             `
             SELECT id
             FROM customers
             WHERE mobile = $1
+            LIMIT 1
             `,
             [mobile]
         );
@@ -99,14 +102,12 @@ router.post("/customer/register", async (req, res) => {
         }
 
 
-        // Hash password
         const passwordHash = await bcrypt.hash(
-            password,
+            String(password),
             12
         );
 
 
-        // Create customer
         const result = await query(
             `
             INSERT INTO customers
@@ -139,7 +140,7 @@ router.post("/customer/register", async (req, res) => {
         const customer = result.rows[0];
 
 
-        res.status(201).json({
+        return res.status(201).json({
 
             success: true,
 
@@ -155,13 +156,21 @@ router.post("/customer/register", async (req, res) => {
 
         });
 
+
     } catch (error) {
 
-        console.error("Customer registration error:", error);
+        console.error(
+            "Customer registration error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
+
             message: "Unable to create customer account."
+
         });
 
     }
@@ -193,7 +202,6 @@ router.post("/customer/login", async (req, res) => {
         }
 
 
-        // Find customer
         const result = await query(
             `
             SELECT
@@ -205,6 +213,7 @@ router.post("/customer/login", async (req, res) => {
                 is_active
             FROM customers
             WHERE mobile = $1
+            LIMIT 1
             `,
             [mobile]
         );
@@ -223,8 +232,7 @@ router.post("/customer/login", async (req, res) => {
         const customer = result.rows[0];
 
 
-        // Account status
-        if (!customer.is_active) {
+        if (customer.is_active === false) {
 
             return res.status(403).json({
                 success: false,
@@ -234,9 +242,8 @@ router.post("/customer/login", async (req, res) => {
         }
 
 
-        // Verify password
         const passwordMatch = await bcrypt.compare(
-            password,
+            String(password),
             customer.password_hash
         );
 
@@ -251,15 +258,18 @@ router.post("/customer/login", async (req, res) => {
         }
 
 
-        // Create token
         const token = createToken({
+
             id: customer.id,
+
             role: "customer",
+
             name: customer.full_name
+
         });
 
 
-        res.json({
+        return res.json({
 
             success: true,
 
@@ -268,22 +278,36 @@ router.post("/customer/login", async (req, res) => {
             token,
 
             user: {
+
                 id: customer.id,
+
                 name: customer.full_name,
+
                 mobile: customer.mobile,
+
                 email: customer.email,
+
                 role: "customer"
+
             }
 
         });
 
+
     } catch (error) {
 
-        console.error("Customer login error:", error);
+        console.error(
+            "Customer login error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
+
             message: "Unable to login."
+
         });
 
     }
@@ -292,7 +316,7 @@ router.post("/customer/login", async (req, res) => {
 
 
 // ============================================
-// ADMIN LOGIN
+// ADMIN / OWNER LOGIN
 // ============================================
 
 router.post("/admin/login", async (req, res) => {
@@ -308,14 +332,82 @@ router.post("/admin/login", async (req, res) => {
         if (!email || !password) {
 
             return res.status(400).json({
+
                 success: false,
+
                 message: "Email and password are required."
+
             });
 
         }
 
 
-        // Find admin
+        const loginEmail = String(email)
+            .trim()
+            .toLowerCase();
+
+
+        // ========================================
+        // OWNER LOGIN
+        // ========================================
+
+        const ownerId = String(
+            process.env.OWNER_ID || "owner@mykisht.com"
+        )
+            .trim()
+            .toLowerCase();
+
+
+        const ownerPassword = String(
+            process.env.OWNER_PASSWORD || "Owner@12345"
+        );
+
+
+        if (
+            loginEmail === ownerId &&
+            String(password) === ownerPassword
+        ) {
+
+            const token = createToken({
+
+                id: 1,
+
+                role: "admin",
+
+                name: "MyKisht Owner"
+
+            });
+
+
+            return res.json({
+
+                success: true,
+
+                message: "Admin login successful.",
+
+                token,
+
+                user: {
+
+                    id: 1,
+
+                    name: "MyKisht Owner",
+
+                    email: ownerId,
+
+                    role: "admin"
+
+                }
+
+            });
+
+        }
+
+
+        // ========================================
+        // DATABASE ADMIN LOGIN
+        // ========================================
+
         const result = await query(
             `
             SELECT
@@ -326,17 +418,21 @@ router.post("/admin/login", async (req, res) => {
                 password_hash,
                 is_active
             FROM admins
-            WHERE email = $1
+            WHERE LOWER(email) = $1
+            LIMIT 1
             `,
-            [email.toLowerCase()]
+            [loginEmail]
         );
 
 
         if (result.rows.length === 0) {
 
             return res.status(401).json({
+
                 success: false,
+
                 message: "Invalid email or password."
+
             });
 
         }
@@ -345,19 +441,21 @@ router.post("/admin/login", async (req, res) => {
         const admin = result.rows[0];
 
 
-        if (!admin.is_active) {
+        if (admin.is_active === false) {
 
             return res.status(403).json({
+
                 success: false,
+
                 message: "Admin account is inactive."
+
             });
 
         }
 
 
-        // Verify password
         const passwordMatch = await bcrypt.compare(
-            password,
+            String(password),
             admin.password_hash
         );
 
@@ -365,22 +463,28 @@ router.post("/admin/login", async (req, res) => {
         if (!passwordMatch) {
 
             return res.status(401).json({
+
                 success: false,
+
                 message: "Invalid email or password."
+
             });
 
         }
 
 
-        // Create token
         const token = createToken({
+
             id: admin.id,
+
             role: "admin",
+
             name: admin.full_name
+
         });
 
 
-        res.json({
+        return res.json({
 
             success: true,
 
@@ -389,22 +493,36 @@ router.post("/admin/login", async (req, res) => {
             token,
 
             user: {
+
                 id: admin.id,
+
                 name: admin.full_name,
+
                 email: admin.email,
+
                 mobile: admin.mobile,
+
                 role: "admin"
+
             }
 
         });
 
+
     } catch (error) {
 
-        console.error("Admin login error:", error);
+        console.error(
+            "Admin login error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
+
             message: "Unable to login."
+
         });
 
     }
@@ -434,6 +552,7 @@ router.get("/me", authenticateToken, async (req, res) => {
                     created_at
                 FROM customers
                 WHERE id = $1
+                LIMIT 1
                 `,
                 [req.user.id]
             );
@@ -442,23 +561,61 @@ router.get("/me", authenticateToken, async (req, res) => {
             if (result.rows.length === 0) {
 
                 return res.status(404).json({
+
                     success: false,
+
                     message: "Customer not found."
+
                 });
 
             }
 
 
             return res.json({
+
                 success: true,
+
                 role: "customer",
+
                 user: result.rows[0]
+
             });
 
         }
 
 
         if (req.user.role === "admin") {
+
+            // Owner login uses the Render environment credentials.
+            // It does not require an admins table row.
+            if (Number(req.user.id) === 1) {
+
+                return res.json({
+
+                    success: true,
+
+                    role: "admin",
+
+                    user: {
+
+                        id: 1,
+
+                        full_name: "MyKisht Owner",
+
+                        email:
+                            process.env.OWNER_ID ||
+                            "owner@mykisht.com",
+
+                        mobile: null,
+
+                        is_active: true
+
+                    }
+
+                });
+
+            }
+
 
             const result = await query(
                 `
@@ -471,6 +628,7 @@ router.get("/me", authenticateToken, async (req, res) => {
                     created_at
                 FROM admins
                 WHERE id = $1
+                LIMIT 1
                 `,
                 [req.user.id]
             );
@@ -479,34 +637,52 @@ router.get("/me", authenticateToken, async (req, res) => {
             if (result.rows.length === 0) {
 
                 return res.status(404).json({
+
                     success: false,
+
                     message: "Admin not found."
+
                 });
 
             }
 
 
             return res.json({
+
                 success: true,
+
                 role: "admin",
+
                 user: result.rows[0]
+
             });
 
         }
 
 
         return res.status(403).json({
+
             success: false,
+
             message: "Unknown account type."
+
         });
+
 
     } catch (error) {
 
-        console.error("Get current user error:", error);
+        console.error(
+            "Get current user error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
+
             message: "Unable to fetch account details."
+
         });
 
     }
