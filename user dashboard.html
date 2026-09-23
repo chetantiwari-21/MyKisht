@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>MyKisht - Dashboard</title>
+
+    <link rel="stylesheet" href="kisht.css">
+
+    <style>
+
+        .dashboard-page {
+            min-height: 100vh;
+            padding: 25px;
+        }
+
+        .dashboard-header {
+            max-width: 1100px;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+        }
+
+        .dashboard-header p {
+            color: #91a1c8;
+            margin-top: 5px;
+        }
+
+        .logout-btn {
+            padding: 10px 18px;
+            border: 1px solid #ff5f6d;
+            background: transparent;
+            color: #ff7b85;
+            border-radius: 9px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #ff5f6d;
+            color: white;
+        }
+
+        .stats-grid {
+            max-width: 1100px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: #10152a;
+            border: 1px solid #252d4d;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .stat-title {
+            color: #91a1c8;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .section {
+            max-width: 1100px;
+            margin: 25px auto;
+            background: #10152a;
+            border: 1px solid #252d4d;
+            border-radius: 15px;
+            padding: 22px;
+        }
+
+        .section h2 {
+            margin-bottom: 18px;
+        }
+
+        .loan-card {
+            border: 1px solid #30395f;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            background: #080d1d;
+        }
+
+        .loan-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 0;
+            border-bottom: 1px solid #1c2440;
+        }
+
+        .loan-row:last-child {
+            border-bottom: none;
+        }
+
+        .loan-label {
+            color: #91a1c8;
+        }
+
+        .loan-value {
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #252d4d;
+        }
+
+        th {
+            color: #91a1c8;
+            font-size: 13px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .paid {
+            color: #23d4ff;
+        }
+
+        .pending {
+            color: #ffc857;
+        }
+
+        .empty {
+            color: #91a1c8;
+            text-align: center;
+            padding: 25px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #91a1c8;
+            padding: 30px;
+        }
+
+        @media (max-width: 800px) {
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+        @media (max-width: 500px) {
+
+            .dashboard-page {
+                padding: 15px;
+            }
+
+            .dashboard-header {
+                align-items: flex-start;
+            }
+
+            .dashboard-header h1 {
+                font-size: 22px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .loan-row {
+                gap: 15px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="dashboard-page">
+
+
+    <!-- HEADER -->
+
+    <div class="dashboard-header">
+
+        <div>
+
+            <h1>MyKisht Dashboard</h1>
+
+            <p id="welcomeText">
+                Welcome
+            </p>
+
+        </div>
+
+
+        <button
+            class="logout-btn"
+            onclick="logout()"
+        >
+            Logout
+        </button>
+
+    </div>
+
+
+
+    <!-- STATS -->
+
+    <div class="stats-grid">
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Total Loan
+            </div>
+
+            <div
+                class="stat-value"
+                id="totalLoan"
+            >
+                ₹0
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Total Jama
+            </div>
+
+            <div
+                class="stat-value"
+                id="totalPaid"
+            >
+                ₹0
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Total Baki
+            </div>
+
+            <div
+                class="stat-value"
+                id="totalOutstanding"
+            >
+                ₹0
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-title">
+                Aaj Ki Installment
+            </div>
+
+            <div
+                class="stat-value"
+                id="todayInstallment"
+            >
+                ₹0
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- LOAN DETAILS -->
+
+    <div class="section">
+
+        <h2>
+            Loan Details
+        </h2>
+
+        <div id="loanContainer">
+
+            <div class="loading">
+                Loading loan details...
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- INSTALLMENT HISTORY -->
+
+    <div class="section">
+
+        <h2>
+            Installment History
+        </h2>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Installment
+                        </th>
+
+                        <th>
+                            Due Date
+                        </th>
+
+                        <th>
+                            Amount
+                        </th>
+
+                        <th>
+                            Paid
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="emiTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            class="empty"
+                        >
+                            Loading...
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+// ======================================================
+// BACKEND
+// ======================================================
+
+const API_URL = "http://localhost:5000";
+
+
+
+// ======================================================
+// TOKEN
+// ======================================================
+
+const token =
+    localStorage.getItem("mykisht_token") ||
+    localStorage.getItem("myKishtToken");
+
+
+
+// ======================================================
+// CHECK LOGIN
+// ======================================================
+
+if (!token) {
+
+    window.location.href =
+        "userlogin.html";
+
+}
+
+
+
+// ======================================================
+// API HELPER
+// ======================================================
+
+async function apiRequest(url) {
+
+    const response =
+        await fetch(
+            `${API_URL}${url}`,
+            {
+                headers: {
+                    "Authorization":
+                        `Bearer ${token}`
+                }
+            }
+        );
+
+
+    const data =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.message ||
+            "Unable to load data."
+        );
+
+    }
+
+
+    return data;
+
+}
+
+
+
+// ======================================================
+// LOAD DASHBOARD
+// ======================================================
+
+async function loadDashboard() {
+
+    try {
+
+        const [
+            profileData,
+            loansData,
+            paymentsData
+        ] = await Promise.all([
+
+            apiRequest(
+                "/api/customer/profile"
+            ),
+
+            apiRequest(
+                "/api/customer/loans"
+            ),
+
+            apiRequest(
+                "/api/customer/payments"
+            )
+
+        ]);
+
+
+        // ------------------------------------------
+        // PROFILE
+        // ------------------------------------------
+
+        if (profileData.customer) {
+
+            document.getElementById(
+                "welcomeText"
+            ).textContent =
+                `Welcome, ${profileData.customer.full_name}`;
+
+        }
+
+
+        // ------------------------------------------
+        // LOANS
+        // ------------------------------------------
+
+        const loans =
+            loansData.loans || [];
+
+
+        // ------------------------------------------
+        // TOTAL LOAN
+        // ------------------------------------------
+
+        let totalLoan = 0;
+
+
+        loans.forEach(loan => {
+
+            totalLoan +=
+                Number(
+                    loan.total_payable || 0
+                );
+
+        });
+
+
+        document.getElementById(
+            "totalLoan"
+        ).textContent =
+            formatMoney(totalLoan);
+
+
+
+        // ------------------------------------------
+        // TOTAL PAID
+        // ------------------------------------------
+
+        const payments =
+            paymentsData.payments || [];
+
+
+        let totalPaid = 0;
+
+
+        payments.forEach(payment => {
+
+            totalPaid +=
+                Number(
+                    payment.amount || 0
+                );
+
+        });
+
+
+        document.getElementById(
+            "totalPaid"
+        ).textContent =
+            formatMoney(totalPaid);
+
+
+
+        // ------------------------------------------
+        // TOTAL OUTSTANDING
+        // ------------------------------------------
+
+        const outstanding =
+            Math.max(
+                0,
+                totalLoan - totalPaid
+            );
+
+
+        document.getElementById(
+            "totalOutstanding"
+        ).textContent =
+            formatMoney(outstanding);
+
+
+
+        // ------------------------------------------
+        // LOAN DETAILS
+        // ------------------------------------------
+
+        renderLoans(loans);
+
+
+
+        // ------------------------------------------
+        // EMI DATA
+        // ------------------------------------------
+
+        if (loans.length > 0) {
+
+            await loadEMI(
+                loans[0].id
+            );
+
+        } else {
+
+            document.getElementById(
+                "emiTableBody"
+            ).innerHTML = `
+                <tr>
+                    <td
+                        colspan="5"
+                        class="empty"
+                    >
+                        No installment found.
+                    </td>
+                </tr>
+            `;
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Dashboard error:",
+            error
+        );
+
+
+        document.getElementById(
+            "loanContainer"
+        ).innerHTML = `
+            <div class="empty">
+                ${error.message}
+            </div>
+        `;
+
+
+        document.getElementById(
+            "emiTableBody"
+        ).innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    class="empty"
+                >
+                    Unable to load installment history.
+                </td>
+            </tr>
+        `;
+
+    }
+
+}
+
+
+
+// ======================================================
+// RENDER LOANS
+// ======================================================
+
+function renderLoans(loans) {
+
+    const container =
+        document.getElementById(
+            "loanContainer"
+        );
+
+
+    if (!loans.length) {
+
+        container.innerHTML = `
+            <div class="empty">
+                No loan found.
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        loans.map(loan => `
+
+            <div class="loan-card">
+
+                <div class="loan-row">
+
+                    <span class="loan-label">
+                        Loan Amount
+                    </span>
+
+                    <span class="loan-value">
+                        ${formatMoney(
+                            loan.principal_amount
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="loan-row">
+
+                    <span class="loan-label">
+                        Interest
+                    </span>
+
+                    <span class="loan-value">
+                        ${formatMoney(
+                            loan.interest_amount
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="loan-row">
+
+                    <span class="loan-label">
+                        Total Payable
+                    </span>
+
+                    <span class="loan-value">
+                        ${formatMoney(
+                            loan.total_payable
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="loan-row">
+
+                    <span class="loan-label">
+                        Installment
+                    </span>
+
+                    <span class="loan-value">
+                        ${formatMoney(
+                            loan.emi_amount
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="loan-row">
+
+                    <span class="loan-label">
+                        Frequency
+                    </span>
+
+                    <span class="loan-value">
+                        ${loan.frequency}
+                    </span>
+
+                </div>
+
+
+                <div class="loan-row">
+
+                    <span class="loan-label">
+                        Status
+                    </span>
+
+                    <span class="loan-value">
+                        ${loan.status}
+                    </span>
+
+                </div>
+
+            </div>
+
+        `).join("");
+
+}
+
+
+
+// ======================================================
+// LOAD EMI
+// ======================================================
+
+async function loadEMI(loanId) {
+
+    try {
+
+        const data =
+            await apiRequest(
+                `/api/customer/loans/${loanId}/emi`
+            );
+
+
+        const emiList =
+            data.emi_schedule || [];
+
+
+        renderEMI(emiList);
+
+
+    } catch (error) {
+
+        console.error(
+            "EMI error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+// ======================================================
+// RENDER EMI
+// ======================================================
+
+function renderEMI(emiList) {
+
+    const tbody =
+        document.getElementById(
+            "emiTableBody"
+        );
+
+
+    if (!emiList.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    class="empty"
+                >
+                    No installment history found.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    // Today's installment
+
+    const today =
+        new Date()
+            .toISOString()
+            .split("T")[0];
+
+
+    const todayEMI =
+        emiList.find(
+            emi =>
+                String(emi.due_date)
+                    .substring(0, 10)
+                === today
+        );
+
+
+    if (todayEMI) {
+
+        const remaining =
+            Math.max(
+                0,
+                Number(todayEMI.amount || 0) -
+                Number(todayEMI.paid_amount || 0)
+            );
+
+
+        document.getElementById(
+            "todayInstallment"
+        ).textContent =
+            formatMoney(remaining);
+
+    }
+
+
+
+    // History
+
+    tbody.innerHTML =
+        emiList.map(emi => `
+
+            <tr>
+
+                <td>
+                    #${emi.installment_number}
+                </td>
+
+                <td>
+                    ${formatDate(
+                        emi.due_date
+                    )}
+                </td>
+
+                <td>
+                    ${formatMoney(
+                        emi.amount
+                    )}
+                </td>
+
+                <td>
+                    ${formatMoney(
+                        emi.paid_amount
+                    )}
+                </td>
+
+                <td class="${
+                    emi.status === "paid"
+                        ? "paid"
+                        : "pending"
+                }">
+
+                    ${emi.status}
+
+                </td>
+
+            </tr>
+
+        `).join("");
+
+}
+
+
+
+// ======================================================
+// MONEY FORMAT
+// ======================================================
+
+function formatMoney(amount) {
+
+    return "₹" +
+        Number(amount || 0)
+            .toLocaleString("en-IN");
+
+}
+
+
+
+// ======================================================
+// DATE FORMAT
+// ======================================================
+
+function formatDate(date) {
+
+    if (!date) {
+        return "-";
+    }
+
+
+    const d =
+        new Date(date);
+
+
+    if (isNaN(d.getTime())) {
+        return date;
+    }
+
+
+    return d.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+
+// ======================================================
+// LOGOUT
+// ======================================================
+
+function logout() {
+
+    localStorage.removeItem(
+        "mykisht_token"
+    );
+
+    localStorage.removeItem(
+        "mykisht_user"
+    );
+
+    localStorage.removeItem(
+        "mykisht_role"
+    );
+
+    localStorage.removeItem(
+        "myKishtToken"
+    );
+
+    localStorage.removeItem(
+        "myKishtUser"
+    );
+
+    localStorage.removeItem(
+        "myKishtRole"
+    );
+
+
+    window.location.href =
+        "userlogin.html";
+
+}
+
+
+
+// ======================================================
+// START
+// ======================================================
+
+loadDashboard();
+
+</script>
+
+</body>
+
+</html>

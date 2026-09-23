@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>MyKisht - Collection</title>
+
+    <link rel="stylesheet" href="kisht.css">
+
+    <style>
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-light);
+            color: var(--text);
+            outline: none;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .form-group select option {
+            background: #101a33;
+            color: white;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .loan-info {
+            display: none;
+            background: var(--card-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 18px;
+        }
+
+        .loan-info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 6px 0;
+        }
+
+        .loan-info-row span:first-child {
+            color: var(--muted);
+        }
+
+        .loan-info-row strong {
+            color: var(--text);
+        }
+
+        .message {
+            display: none;
+            padding: 13px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .message.success {
+            display: block;
+            background: rgba(25, 211, 162, 0.12);
+            color: var(--green);
+        }
+
+        .message.error {
+            display: block;
+            background: rgba(255, 70, 70, 0.12);
+            color: #ff6b6b;
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: var(--primary);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .back-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .history-box {
+            margin-top: 25px;
+        }
+
+        .history-title {
+            margin-bottom: 15px;
+        }
+
+        .collection-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 14px;
+            margin-bottom: 10px;
+            background: var(--card-light);
+            border-radius: 12px;
+        }
+
+        .collection-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .collection-meta {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .collection-amount {
+            font-size: 17px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 25px 10px;
+        }
+
+        .loading {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 600px) {
+
+            .summary {
+                grid-template-columns: 1fr;
+            }
+
+            .collection-row {
+                align-items: flex-start;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="page">
+
+
+    <!-- LOGO -->
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            ₹
+        </div>
+
+        <div>
+
+            <h1>MyKisht</h1>
+
+            <p>
+                Simple. Secure. Organized.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- SUMMARY -->
+
+    <div class="summary">
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                Today's Collection
+            </div>
+
+            <div
+                class="summary-value"
+                id="todayCollection"
+            >
+                ₹0
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                Total Collection
+            </div>
+
+            <div
+                class="summary-value"
+                id="totalCollection"
+            >
+                ₹0
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- COLLECTION CARD -->
+
+    <div class="login-card">
+
+        <div class="welcome-icon">
+            💵
+        </div>
+
+        <h2>
+            Add Collection
+        </h2>
+
+        <p class="subtitle">
+            Customer ki manual installment collection yahan record karein.
+        </p>
+
+
+        <!-- MESSAGE -->
+
+        <div
+            id="message"
+            class="message"
+        ></div>
+
+
+        <!-- FORM -->
+
+        <form
+            id="collectionForm"
+            onsubmit="addCollection(event)"
+        >
+
+
+            <!-- CUSTOMER -->
+
+            <div class="form-group">
+
+                <label for="customer">
+                    Select Customer
+                </label>
+
+                <select
+                    id="customer"
+                    required
+                    onchange="loadLoans()"
+                >
+
+                    <option value="">
+                        Loading customers...
+                    </option>
+
+                </select>
+
+                <div
+                    id="customerLoading"
+                    class="loading"
+                ></div>
+
+            </div>
+
+
+            <!-- LOAN -->
+
+            <div class="form-group">
+
+                <label for="loan">
+                    Select Loan
+                </label>
+
+                <select
+                    id="loan"
+                    required
+                    onchange="loadInstallments()"
+                    disabled
+                >
+
+                    <option value="">
+                        Select customer first
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- EMI -->
+
+            <div class="form-group">
+
+                <label for="emi">
+                    Select Installment
+                </label>
+
+                <select
+                    id="emi"
+                    required
+                    onchange="showEmiInfo()"
+                    disabled
+                >
+
+                    <option value="">
+                        Select loan first
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- EMI INFO -->
+
+            <div
+                id="loanInfo"
+                class="loan-info"
+            >
+
+                <div class="loan-info-row">
+
+                    <span>
+                        Installment Amount
+                    </span>
+
+                    <strong id="emiAmount">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="loan-info-row">
+
+                    <span>
+                        Already Paid
+                    </span>
+
+                    <strong id="emiPaid">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="loan-info-row">
+
+                    <span>
+                        Remaining
+                    </span>
+
+                    <strong id="emiRemaining">
+                        ₹0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- AMOUNT -->
+
+            <div class="form-group">
+
+                <label for="amount">
+                    Collection Amount (₹)
+                </label>
+
+                <input
+                    type="number"
+                    id="amount"
+                    placeholder="Example: 120"
+                    min="1"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+
+            <!-- COLLECTION METHOD -->
+
+            <div class="form-group">
+
+                <label for="paymentMethod">
+                    Collection Method
+                </label>
+
+                <select
+                    id="paymentMethod"
+                    required
+                >
+
+                    <option value="cash">
+                        Cash
+                    </option>
+
+                    <option value="manual">
+                        Manual
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- NOTE -->
+
+            <div class="form-group">
+
+                <label for="note">
+                    Note
+                </label>
+
+                <textarea
+                    id="note"
+                    placeholder="Optional note"
+                ></textarea>
+
+            </div>
+
+
+            <!-- SAVE -->
+
+            <button
+                type="submit"
+                class="primary-btn"
+                id="saveBtn"
+            >
+                Save Collection
+            </button>
+
+
+        </form>
+
+
+        <!-- BACK -->
+
+        <button
+            type="button"
+            class="back-btn"
+            onclick="goBack()"
+        >
+            ← Back to Dashboard
+        </button>
+
+
+    </div>
+
+
+    <!-- HISTORY -->
+
+    <div class="history-box">
+
+        <h2 class="history-title">
+            Recent Collections
+        </h2>
+
+        <div id="historyList">
+
+            <div class="empty">
+                Loading collection history...
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <footer>
+
+        <p>
+            © 2026 MyKisht. All rights reserved.
+        </p>
+
+    </footer>
+
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// API
+// =====================================================
+
+const API_URL = "http://localhost:5000";
+
+
+// =====================================================
+// AUTH
+// =====================================================
+
+const token =
+    localStorage.getItem("mykisht_token") ||
+    localStorage.getItem("myKishtToken");
+
+const role =
+    localStorage.getItem("mykisht_role") ||
+    localStorage.getItem("myKishtRole");
+
+let loanRequestVersion = 0;
+
+
+if (
+    !token ||
+    !["admin", "owner"].includes(role)
+) {
+
+    window.location.href = "owner.html";
+
+}
+
+
+// =====================================================
+// API RESPONSE
+// =====================================================
+
+async function readResponse(response) {
+
+    const contentType =
+        response.headers.get("content-type") || "";
+
+
+    if (
+        contentType.includes("application/json")
+    ) {
+
+        return await response.json();
+
+    }
+
+
+    const text =
+        await response.text();
+
+
+    return {
+
+        success: false,
+
+        message:
+            text ||
+            `Server error (${response.status})`
+
+    };
+
+}
+
+
+// =====================================================
+// MONEY
+// =====================================================
+
+function money(value) {
+
+    return "₹" +
+
+        Number(value || 0).toLocaleString(
+            "en-IN",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+
+}
+
+
+// =====================================================
+// MESSAGE
+// =====================================================
+
+function showMessage(text, type) {
+
+    const box =
+        document.getElementById("message");
+
+
+    box.textContent = text;
+
+    box.className =
+        `message ${type}`;
+
+    box.style.display =
+        "block";
+
+}
+
+
+// =====================================================
+// LOAD CUSTOMERS
+// =====================================================
+
+async function loadCustomers() {
+
+    const select =
+        document.getElementById("customer");
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/api/admin/customers`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const data =
+            await readResponse(response);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load customers."
+            );
+
+        }
+
+
+        const customers =
+            data.customers || [];
+
+
+        select.innerHTML = `
+            <option value="">
+                Select Customer
+            </option>
+        `;
+
+
+        customers.forEach(
+            function(customer) {
+
+                const option =
+                    document.createElement("option");
+
+
+                option.value =
+                    customer.id;
+
+
+                option.textContent =
+                    `${customer.full_name} - ${customer.mobile}`;
+
+
+                select.appendChild(option);
+
+            }
+        );
+
+
+        document.getElementById(
+            "customerLoading"
+        ).textContent =
+            customers.length
+                ? `${customers.length} customer available`
+                : "No customer found.";
+
+
+    } catch (error) {
+
+        console.error(
+            "Load customers error:",
+            error
+        );
+
+
+        select.innerHTML = `
+            <option value="">
+                Failed to load customers
+            </option>
+        `;
+
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD LOANS
+// =====================================================
+// IMPORTANT:
+// admin.js endpoint:
+// /api/admin/customers/:customerId
+//
+// Is endpoint se customer + loans dono milte hain.
+// =====================================================
+
+async function loadLoans() {
+
+    const customerId =
+        document.getElementById("customer").value;
+
+    const requestVersion =
+        ++loanRequestVersion;
+
+
+    const loanSelect =
+        document.getElementById("loan");
+
+
+    const emiSelect =
+        document.getElementById("emi");
+
+
+    loanSelect.innerHTML = `
+        <option value="">
+            Loading loans...
+        </option>
+    `;
+
+
+    loanSelect.disabled = true;
+
+
+    emiSelect.innerHTML = `
+        <option value="">
+            Select loan first
+        </option>
+    `;
+
+
+    emiSelect.disabled = true;
+
+
+    document.getElementById(
+        "loanInfo"
+    ).style.display = "none";
+
+
+    if (!customerId) {
+
+        loanSelect.innerHTML = `
+            <option value="">
+                Select customer first
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/api/admin/customers/${customerId}`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const data =
+            await readResponse(response);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load loans."
+            );
+
+        }
+
+        // Ignore a slower response for a customer that is no longer selected.
+        if (
+            requestVersion !== loanRequestVersion ||
+            document.getElementById("customer").value !== customerId
+        ) {
+            return;
+        }
+
+        if (
+            data.customer &&
+            String(data.customer.id) !== String(customerId)
+        ) {
+            throw new Error("Customer loan data did not match the selected customer.");
+        }
+
+
+        // This endpoint already returns loans for the selected customer only.
+        const loans =
+            data.loans || [];
+
+
+        loanSelect.innerHTML = `
+            <option value="">
+                Select Loan
+            </option>
+        `;
+
+
+        loans.forEach(
+            function(loan) {
+
+                const option =
+                    document.createElement("option");
+
+
+                option.value =
+                    loan.id;
+
+
+                option.textContent =
+                    `Loan #${loan.id} - ${money(
+                        loan.total_payable ||
+                        loan.principal_amount ||
+                        0
+                    )}`;
+
+
+                loanSelect.appendChild(option);
+
+            }
+        );
+
+
+        if (loans.length === 0) {
+
+            loanSelect.innerHTML = `
+                <option value="">
+                    No loan found
+                </option>
+            `;
+
+            loanSelect.disabled = true;
+
+            return;
+
+        }
+
+
+        loanSelect.disabled = false;
+
+
+    } catch (error) {
+
+        console.error(
+            "Load loans error:",
+            error
+        );
+
+
+        loanSelect.innerHTML = `
+            <option value="">
+                Failed to load loans
+            </option>
+        `;
+
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD INSTALLMENTS
+// =====================================================
+
+async function loadInstallments() {
+
+    const loanId =
+        document.getElementById("loan").value;
+
+
+    const emiSelect =
+        document.getElementById("emi");
+
+
+    emiSelect.disabled = true;
+
+
+    document.getElementById(
+        "loanInfo"
+    ).style.display = "none";
+
+
+    if (!loanId) {
+
+        emiSelect.innerHTML = `
+            <option value="">
+                Select loan first
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/api/admin/loans/${loanId}/emi`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const data =
+            await readResponse(response);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load installments."
+            );
+
+        }
+
+
+        const installments =
+            data.emi_schedule || [];
+
+
+        emiSelect.innerHTML = `
+            <option value="">
+                Select Installment
+            </option>
+        `;
+
+
+        installments.forEach(
+            function(emi) {
+
+                const amount =
+                    Number(
+                        emi.amount || 0
+                    );
+
+
+                const paid =
+                    Number(
+                        emi.paid_amount || 0
+                    );
+
+
+                const remaining =
+                    Math.max(
+                        amount - paid,
+                        0
+                    );
+
+
+                // Fully paid EMI ko list me nahi dikhayenge
+
+                if (
+                    emi.status === "paid" ||
+                    remaining <= 0
+                ) {
+
+                    return;
+
+                }
+
+
+                const option =
+                    document.createElement("option");
+
+
+                option.value =
+                    emi.id;
+
+
+                option.dataset.amount =
+                    amount;
+
+
+                option.dataset.paid =
+                    paid;
+
+
+                option.dataset.remaining =
+                    remaining;
+
+
+                option.textContent =
+                    `Installment #${emi.installment_number}` +
+                    ` - ${money(remaining)}` +
+                    ` - ${emi.status}`;
+
+
+                emiSelect.appendChild(option);
+
+            }
+        );
+
+
+        if (
+            emiSelect.options.length <= 1
+        ) {
+
+            emiSelect.innerHTML = `
+                <option value="">
+                    No pending installment
+                </option>
+            `;
+
+            emiSelect.disabled = true;
+
+            return;
+
+        }
+
+
+        emiSelect.disabled = false;
+
+
+    } catch (error) {
+
+        console.error(
+            "Load installments error:",
+            error
+        );
+
+
+        emiSelect.innerHTML = `
+            <option value="">
+                Failed to load installments
+            </option>
+        `;
+
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// SHOW EMI INFO
+// =====================================================
+
+function showEmiInfo() {
+
+    const select =
+        document.getElementById("emi");
+
+
+    const option =
+        select.options[
+            select.selectedIndex
+        ];
+
+
+    const info =
+        document.getElementById("loanInfo");
+
+
+    if (
+        !option ||
+        !option.value
+    ) {
+
+        info.style.display = "none";
+
+        return;
+
+    }
+
+
+    const amount =
+        Number(
+            option.dataset.amount || 0
+        );
+
+
+    const paid =
+        Number(
+            option.dataset.paid || 0
+        );
+
+
+    const remaining =
+        Number(
+            option.dataset.remaining || 0
+        );
+
+
+    document.getElementById(
+        "emiAmount"
+    ).textContent =
+        money(amount);
+
+
+    document.getElementById(
+        "emiPaid"
+    ).textContent =
+        money(paid);
+
+
+    document.getElementById(
+        "emiRemaining"
+    ).textContent =
+        money(remaining);
+
+
+    document.getElementById(
+        "amount"
+    ).value =
+        remaining > 0
+            ? remaining
+            : "";
+
+
+    document.getElementById(
+        "amount"
+    ).max =
+        remaining;
+
+
+    info.style.display =
+        "block";
+
+}
+
+
+// =====================================================
+// ADD COLLECTION
+// =====================================================
+
+async function addCollection(event) {
+
+    event.preventDefault();
+
+
+    const customerId =
+        document.getElementById(
+            "customer"
+        ).value;
+
+
+    const loanId =
+        document.getElementById(
+            "loan"
+        ).value;
+
+
+    const emiId =
+        document.getElementById(
+            "emi"
+        ).value;
+
+
+    const amount =
+        Number(
+            document.getElementById(
+                "amount"
+            ).value
+        );
+
+
+    const paymentMethod =
+        document.getElementById(
+            "paymentMethod"
+        ).value;
+
+
+    const note =
+        document.getElementById(
+            "note"
+        ).value.trim();
+
+
+    const saveBtn =
+        document.getElementById(
+            "saveBtn"
+        );
+
+
+    if (!customerId) {
+
+        showMessage(
+            "Please select customer.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!loanId) {
+
+        showMessage(
+            "Please select loan.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!emiId) {
+
+        showMessage(
+            "Please select installment.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !Number.isFinite(amount) ||
+        amount <= 0
+    ) {
+
+        showMessage(
+            "Please enter a valid amount.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const emiOption =
+        document.getElementById(
+            "emi"
+        ).selectedOptions[0];
+
+
+    const remaining =
+        Number(
+            emiOption?.dataset?.remaining || 0
+        );
+
+
+    if (
+        remaining > 0 &&
+        amount > remaining
+    ) {
+
+        showMessage(
+            `Amount ${money(amount)} remaining ${money(remaining)} se zyada nahi ho sakta.`,
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    saveBtn.disabled = true;
+
+    saveBtn.textContent =
+        "Saving...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/api/collection/add`,
+                {
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${token}`
+
+                    },
+
+                    body: JSON.stringify({
+
+                        customerId:
+                            Number(customerId),
+
+                        loanId:
+                            Number(loanId),
+
+                        emiId:
+                            Number(emiId),
+
+                        amount:
+                            amount,
+
+                        paymentMethod:
+                            paymentMethod,
+
+                        note:
+                            note || null
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await readResponse(response);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to save collection."
+            );
+
+        }
+
+
+        showMessage(
+            data.message ||
+            "Collection saved successfully.",
+            "success"
+        );
+
+
+        document.getElementById(
+            "collectionForm"
+        ).reset();
+
+
+        document.getElementById(
+            "loan"
+        ).innerHTML = `
+            <option value="">
+                Select customer first
+            </option>
+        `;
+
+
+        document.getElementById(
+            "loan"
+        ).disabled = true;
+
+
+        document.getElementById(
+            "emi"
+        ).innerHTML = `
+            <option value="">
+                Select loan first
+            </option>
+        `;
+
+
+        document.getElementById(
+            "emi"
+        ).disabled = true;
+
+
+        document.getElementById(
+            "loanInfo"
+        ).style.display = "none";
+
+
+        await loadSummary();
+
+        await loadHistory();
+
+        await loadCustomers();
+
+
+    } catch (error) {
+
+        console.error(
+            "Collection error:",
+            error
+        );
+
+
+        showMessage(
+            error.message ||
+            "Collection save nahi hui.",
+            "error"
+        );
+
+
+    } finally {
+
+        saveBtn.disabled = false;
+
+        saveBtn.textContent =
+            "Save Collection";
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD SUMMARY
+// =====================================================
+
+async function loadSummary() {
+
+    try {
+
+        // TODAY'S COLLECTION
+
+        const todayResponse =
+            await fetch(
+                `${API_URL}/api/collection/today`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const todayData =
+            await readResponse(
+                todayResponse
+            );
+
+
+        if (!todayResponse.ok) {
+
+            throw new Error(
+                todayData.message ||
+                "Unable to load today's collection."
+            );
+
+        }
+
+
+        document.getElementById(
+            "todayCollection"
+        ).textContent =
+            money(
+                todayData.total_collection || 0
+            );
+
+
+        // TOTAL COLLECTION
+
+        const allResponse =
+            await fetch(
+                `${API_URL}/api/collection`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const allData =
+            await readResponse(
+                allResponse
+            );
+
+
+        if (!allResponse.ok) {
+
+            throw new Error(
+                allData.message ||
+                "Unable to load collection."
+            );
+
+        }
+
+
+        const collections =
+            allData.collections || [];
+
+
+        let total = 0;
+
+
+        collections.forEach(
+            function(item) {
+
+                total += Number(
+                    item.amount || 0
+                );
+
+            }
+        );
+
+
+        document.getElementById(
+            "totalCollection"
+        ).textContent =
+            money(total);
+
+
+    } catch (error) {
+
+        console.error(
+            "Summary error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD COLLECTION HISTORY
+// =====================================================
+
+async function loadHistory() {
+
+    const list =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/api/collection`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        const data =
+            await readResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load history."
+            );
+
+        }
+
+
+        const collections =
+            data.collections || [];
+
+
+        if (
+            !Array.isArray(collections) ||
+            collections.length === 0
+        ) {
+
+            list.innerHTML = `
+                <div class="empty">
+                    Abhi koi collection nahi hai.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        list.innerHTML = "";
+
+
+        collections
+            .slice(0, 15)
+            .forEach(
+                function(item) {
+
+                    const row =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    row.className =
+                        "collection-row";
+
+
+                    const name =
+                        item.customer_name ||
+                        "Customer";
+
+
+                    const date =
+                        item.paid_at
+                            ? new Date(
+                                item.paid_at
+                            ).toLocaleString(
+                                "en-IN"
+                            )
+                            : "-";
+
+
+                    row.innerHTML = `
+
+                        <div>
+
+                            <div class="collection-name">
+
+                                ${escapeHtml(
+                                    name
+                                )}
+
+                            </div>
+
+                            <div class="collection-meta">
+
+                                ${date}
+
+                                •
+
+                                ${escapeHtml(
+                                    item.payment_method ||
+                                    "cash"
+                                )}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="collection-amount">
+
+                            ${money(
+                                item.amount
+                            )}
+
+                        </div>
+
+                    `;
+
+
+                    list.appendChild(
+                        row
+                    );
+
+                }
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            "History error:",
+            error
+        );
+
+
+        list.innerHTML = `
+            <div class="empty">
+                Collection history load nahi ho saki.
+            </div>
+        `;
+
+    }
+
+}
+
+
+// =====================================================
+// ESCAPE HTML
+// =====================================================
+
+function escapeHtml(text) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.innerText =
+        text ?? "";
+
+
+    return div.innerHTML;
+
+}
+
+
+// =====================================================
+// BACK TO DASHBOARD
+// =====================================================
+
+function goBack() {
+
+    window.location.href =
+        "./ownerdashbord.html";
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+loadCustomers();
+
+loadSummary();
+
+loadHistory();
+
+
+</script>
+
+
+</body>
+
+</html>

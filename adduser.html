@@ -1,0 +1,999 @@
+<!<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Add Customer - MyKisht</title>
+
+    <link rel="stylesheet" href="kisht.css">
+
+    <style>
+
+        .form-card {
+            width: 100%;
+            max-width: 700px;
+            margin: 30px auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .form-header {
+            margin-bottom: 25px;
+        }
+
+        .form-header h2 {
+            margin: 0;
+            color: var(--text);
+            font-size: 27px;
+        }
+
+        .form-header p {
+            margin: 7px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-section-title {
+            color: var(--primary-light);
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .input-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .input-group label {
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px 14px;
+            border-radius: 11px;
+            border: 1px solid var(--border);
+            background: var(--card-light);
+            color: var(--text);
+            outline: none;
+            font-size: 14px;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(118, 87, 255, 0.12);
+        }
+
+        .input-group select option {
+            background: #101a33;
+            color: white;
+        }
+
+        .calculation-box {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 14px;
+            background: rgba(118, 87, 255, 0.07);
+            border: 1px solid rgba(118, 87, 255, 0.2);
+        }
+
+        .calculation-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 8px 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .calculation-row strong {
+            color: var(--text);
+        }
+
+        .calculation-row.total {
+            margin-top: 8px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            color: var(--text);
+            font-size: 15px;
+        }
+
+        .calculation-row.total strong {
+            color: var(--green);
+            font-size: 17px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .save-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--primary-light)
+            );
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn {
+            padding: 14px 22px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .message {
+            display: none;
+            margin-top: 18px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .message.success {
+            display: block;
+            color: var(--green);
+            background: rgba(25, 211, 162, 0.08);
+            border: 1px solid rgba(25, 211, 162, 0.2);
+        }
+
+        .message.error {
+            display: block;
+            color: #ff7b8a;
+            background: rgba(255, 75, 95, 0.08);
+            border: 1px solid rgba(255, 75, 95, 0.2);
+        }
+
+        @media (max-width: 600px) {
+
+            .form-card {
+                padding: 22px 18px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-group.full {
+                grid-column: auto;
+            }
+
+            .button-row {
+                flex-direction: column;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="page">
+
+    <div class="form-card">
+
+
+        <!-- HEADER -->
+
+        <div class="form-header">
+
+            <h2>
+                ➕ Add New Customer
+            </h2>
+
+            <p>
+                Add borrower details and create their loan.
+            </p>
+
+        </div>
+
+
+        <form
+            id="customerForm"
+            onsubmit="saveUser(event)"
+        >
+
+
+            <!-- CUSTOMER DETAILS -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    👤 Borrower Details
+                </div>
+
+
+                <div class="form-grid">
+
+
+                    <div class="input-group">
+
+                        <label for="name">
+                            Full Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="name"
+                            placeholder="Enter borrower name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="input-group">
+
+                        <label for="mobile">
+                            Mobile Number
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="mobile"
+                            placeholder="10 digit mobile number"
+                            maxlength="10"
+                            inputmode="numeric"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="input-group full">
+
+                        <label for="address">
+                            Address
+                        </label>
+
+                        <input
+                            type="text"
+                            id="address"
+                            placeholder="Enter borrower address"
+                        >
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+            <!-- LOAN DETAILS -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    💰 Loan Details
+                </div>
+
+
+                <div class="form-grid">
+
+
+                    <div class="input-group">
+
+                        <label for="loanAmount">
+                            Loan Amount (₹)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="loanAmount"
+                            placeholder="Example: 10000"
+                            min="1"
+                            step="0.01"
+                            oninput="calculateLoan()"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="input-group">
+
+                        <label for="interest">
+                            Interest (%)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="interest"
+                            placeholder="Example: 10"
+                            min="0"
+                            step="0.01"
+                            oninput="calculateLoan()"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="input-group">
+
+                        <label for="installmentAmount">
+                            Installment Amount (₹)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="installmentAmount"
+                            placeholder="Example: 500"
+                            min="1"
+                            step="0.01"
+                            oninput="calculateLoan()"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="input-group">
+
+                        <label for="frequency">
+                            Installment Frequency
+                        </label>
+
+                        <select
+                            id="frequency"
+                        >
+
+                            <option value="daily">
+                                Daily
+                            </option>
+
+                            <option value="weekly">
+                                Weekly
+                            </option>
+
+                            <option value="monthly">
+                                Monthly
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="input-group">
+
+                        <label for="startDate">
+                            Loan Start Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="startDate"
+                            required
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- CALCULATION -->
+
+                <div class="calculation-box">
+
+
+                    <div class="calculation-row">
+
+                        <span>
+                            Principal
+                        </span>
+
+                        <strong id="principalDisplay">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="calculation-row">
+
+                        <span>
+                            Interest Amount
+                        </span>
+
+                        <strong id="interestDisplay">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="calculation-row total">
+
+                        <span>
+                            Total Payable
+                        </span>
+
+                        <strong id="totalDisplay">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="calculation-row">
+
+                        <span>
+                            Estimated Installments
+                        </span>
+
+                        <strong id="installmentsDisplay">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+            <!-- BUTTONS -->
+
+            <div class="button-row">
+
+                <button
+                    type="button"
+                    class="cancel-btn"
+                    onclick="goBack()"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="save-btn"
+                    id="saveBtn"
+                >
+                    Save User & Loan
+                </button>
+
+            </div>
+
+
+        </form>
+
+
+        <div
+            id="message"
+            class="message"
+        ></div>
+
+
+    </div>
+
+
+    <footer>
+
+        <p>
+            © 2026 MyKisht. All rights reserved.
+        </p>
+
+    </footer>
+
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// BACKEND
+// =====================================================
+
+const API_URL =
+    "http://localhost:5000";
+
+
+// =====================================================
+// AUTH TOKEN
+// =====================================================
+
+function getToken() {
+
+    return localStorage.getItem(
+        "mykisht_token"
+    );
+
+}
+
+
+// =====================================================
+// CHECK LOGIN
+// =====================================================
+
+if (!getToken()) {
+
+    window.location.href =
+        "owner.html";
+
+}
+
+
+// =====================================================
+// TODAY DATE
+// =====================================================
+
+document.getElementById(
+    "startDate"
+).value =
+    new Date()
+        .toISOString()
+        .split("T")[0];
+
+
+// =====================================================
+// CALCULATE LOAN
+// =====================================================
+
+function calculateLoan() {
+
+
+    const loanAmount =
+        Number(
+            document.getElementById(
+                "loanAmount"
+            ).value
+        ) || 0;
+
+
+    const interest =
+        Number(
+            document.getElementById(
+                "interest"
+            ).value
+        ) || 0;
+
+
+    const installment =
+        Number(
+            document.getElementById(
+                "installmentAmount"
+            ).value
+        ) || 0;
+
+
+    const interestAmount =
+        loanAmount *
+        interest /
+        100;
+
+
+    const total =
+        loanAmount +
+        interestAmount;
+
+
+    const installments =
+        installment > 0
+            ? Math.ceil(
+                total /
+                installment
+            )
+            : 0;
+
+
+    document.getElementById(
+        "principalDisplay"
+    ).textContent =
+        money(loanAmount);
+
+
+    document.getElementById(
+        "interestDisplay"
+    ).textContent =
+        money(interestAmount);
+
+
+    document.getElementById(
+        "totalDisplay"
+    ).textContent =
+        money(total);
+
+
+    document.getElementById(
+        "installmentsDisplay"
+    ).textContent =
+        installments;
+
+}
+
+
+// =====================================================
+// MONEY FORMAT
+// =====================================================
+
+function money(value) {
+
+    return (
+        "₹" +
+        Number(value || 0)
+            .toLocaleString(
+                "en-IN",
+                {
+                    maximumFractionDigits: 2
+                }
+            )
+    );
+
+}
+
+
+// =====================================================
+// SAVE USER + LOAN
+// =====================================================
+
+async function saveUser(event) {
+
+    event.preventDefault();
+
+
+    const name =
+        document.getElementById(
+            "name"
+        ).value.trim();
+
+
+    const mobile =
+        document.getElementById(
+            "mobile"
+        ).value.trim();
+
+
+    const address =
+        document.getElementById(
+            "address"
+        ).value.trim();
+
+
+    const loanAmount =
+        Number(
+            document.getElementById(
+                "loanAmount"
+            ).value
+        );
+
+
+    const interest =
+        Number(
+            document.getElementById(
+                "interest"
+            ).value
+        );
+
+
+    const installmentAmount =
+        Number(
+            document.getElementById(
+                "installmentAmount"
+            ).value
+        );
+
+
+    const frequency =
+        document.getElementById(
+            "frequency"
+        ).value;
+
+
+    const startDate =
+        document.getElementById(
+            "startDate"
+        ).value;
+
+
+    // =============================================
+    // VALIDATION
+    // =============================================
+
+    if (
+        !/^[0-9]{10}$/.test(
+            mobile
+        )
+    ) {
+
+        showMessage(
+            "Please enter a valid 10 digit mobile number.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !name ||
+        loanAmount <= 0 ||
+        installmentAmount <= 0
+    ) {
+
+        showMessage(
+            "Please enter valid customer and loan details.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const token =
+        getToken();
+
+
+    if (!token) {
+
+        window.location.href =
+            "owner.html";
+
+        return;
+
+    }
+
+
+    const saveBtn =
+        document.getElementById(
+            "saveBtn"
+        );
+
+
+    saveBtn.disabled =
+        true;
+
+
+    saveBtn.textContent =
+        "Saving...";
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/owner/users",
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            "Bearer " +
+                            token
+
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            name,
+                            mobile,
+                            address,
+                            loanAmount,
+                            interest,
+                            installmentAmount,
+                            frequency,
+                            startDate
+
+                        })
+
+                }
+            );
+
+
+        const contentType =
+            response.headers.get(
+                "content-type"
+            ) || "";
+
+
+        let data;
+
+
+        if (
+            contentType.includes(
+                "application/json"
+            )
+        ) {
+
+            data =
+                await response.json();
+
+        } else {
+
+            throw new Error(
+                `Server returned an unexpected response (${response.status}).`
+            );
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to add customer."
+            );
+
+        }
+
+
+        showMessage(
+            data.message ||
+            "Customer and loan added successfully.",
+            "success"
+        );
+
+
+        document.getElementById(
+            "customerForm"
+        ).reset();
+
+
+        document.getElementById(
+            "startDate"
+        ).value =
+            new Date()
+                .toISOString()
+                .split("T")[0];
+
+
+        calculateLoan();
+
+
+        // Return to dashboard after success
+        setTimeout(() => {
+
+            window.location.href =
+                "ownerdashbord.html";
+
+        }, 1200);
+
+
+    } catch (error) {
+
+        console.error(
+            "Add customer error:",
+            error
+        );
+
+
+        showMessage(
+            error.message ||
+            "Unable to add customer.",
+            "error"
+        );
+
+
+    } finally {
+
+        saveBtn.disabled =
+            false;
+
+        saveBtn.textContent =
+            "Save User & Loan";
+
+    }
+
+}
+
+
+// =====================================================
+// BACK
+// =====================================================
+
+function goBack() {
+
+    window.location.href =
+        "ownerdashbord.html";
+
+}
+
+
+// =====================================================
+// MESSAGE
+// =====================================================
+
+function showMessage(
+    text,
+    type
+) {
+
+    const message =
+        document.getElementById(
+            "message"
+        );
+
+
+    message.textContent =
+        text;
+
+
+    message.className =
+        "message " + type;
+
+}
+
+
+// =====================================================
+// INITIAL CALCULATION
+// =====================================================
+
+calculateLoan();
+
+
+</script>
+
+
+</body>
+
+</html>

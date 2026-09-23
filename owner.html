@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>MyKisht - Owner Login</title>
+
+    <link rel="stylesheet" href="kisht.css">
+</head>
+
+<body>
+
+<div class="page">
+
+    <!-- LOGO -->
+    <div class="logo">
+
+        <div class="logo-icon">
+            ₹
+        </div>
+
+        <div>
+            <h1>MyKisht</h1>
+
+            <p>
+                Simple. Secure. Organized.
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- LOGIN CARD -->
+    <div class="login-card">
+
+        <div class="welcome-icon">
+            👑
+        </div>
+
+        <h2>
+            Owner Login
+        </h2>
+
+        <p class="subtitle">
+            Login to manage customers, loans and collections.
+        </p>
+
+
+        <form
+            id="loginForm"
+            onsubmit="loginOwner(event)"
+        >
+
+            <!-- EMAIL -->
+            <div class="form-group">
+
+                <label for="email">
+                    Owner Email
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Enter owner email"
+                    required
+                >
+
+            </div>
+
+
+            <!-- PASSWORD -->
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <div class="password-box">
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter owner password"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        onclick="togglePassword()"
+                    >
+                        👁
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- MESSAGE -->
+            <div
+                id="message"
+                class="message"
+            ></div>
+
+
+            <!-- LOGIN -->
+            <button
+                type="submit"
+                class="primary-btn"
+                id="loginBtn"
+            >
+                Login as Owner
+            </button>
+
+        </form>
+
+
+        <!-- FORGOT -->
+        <button
+            type="button"
+            class="link-btn"
+            onclick="forgotPassword()"
+        >
+            Forgot Password?
+        </button>
+
+
+        <!-- BACK -->
+        <button
+            type="button"
+            class="back-btn"
+            onclick="goBack()"
+        >
+            ← Back
+        </button>
+
+    </div>
+
+
+    <footer>
+
+        <p>
+            © 2026 MyKisht. All rights reserved.
+        </p>
+
+    </footer>
+
+</div>
+
+
+<script>
+
+// ======================================================
+// BACKEND URL
+// ======================================================
+
+const API_URL = "http://localhost:5000";
+
+
+// ======================================================
+// PASSWORD SHOW / HIDE
+// ======================================================
+
+function togglePassword() {
+
+    const password =
+        document.getElementById("password");
+
+    const button =
+        document.querySelector(".password-toggle");
+
+
+    if (password.type === "password") {
+
+        password.type = "text";
+
+        button.textContent = "🙈";
+
+    } else {
+
+        password.type = "password";
+
+        button.textContent = "👁";
+
+    }
+
+}
+
+
+// ======================================================
+// OWNER LOGIN
+// ======================================================
+
+async function loginOwner(event) {
+
+    event.preventDefault();
+
+
+    const email =
+        document.getElementById("email")
+            .value
+            .trim()
+            .toLowerCase();
+
+
+    const password =
+        document.getElementById("password")
+            .value;
+
+
+    const loginBtn =
+        document.getElementById("loginBtn");
+
+
+    // ------------------------------------------
+    // VALIDATION
+    // ------------------------------------------
+
+    if (!email) {
+
+        showMessage(
+            "Please enter owner email.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!password) {
+
+        showMessage(
+            "Please enter your password.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    // ------------------------------------------
+    // LOADING
+    // ------------------------------------------
+
+    loginBtn.disabled = true;
+
+    loginBtn.textContent =
+        "Logging in...";
+
+
+    try {
+
+        // ------------------------------------------
+        // API REQUEST
+        // ------------------------------------------
+
+        const response =
+            await fetch(
+                `${API_URL}/api/auth/admin/login`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        email: email,
+
+                        password: password
+
+                    })
+
+                }
+            );
+
+
+        // ------------------------------------------
+        // READ RESPONSE SAFELY
+        // ------------------------------------------
+
+        const contentType =
+            response.headers.get("content-type") || "";
+
+
+        let data;
+
+
+        if (contentType.includes("application/json")) {
+
+            data = await response.json();
+
+        } else {
+
+            const text =
+                await response.text();
+
+            throw new Error(
+                `Server returned an unexpected response (${response.status}).`
+            );
+
+        }
+
+
+        // ------------------------------------------
+        // ERROR
+        // ------------------------------------------
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                data.message ||
+                "Owner login failed."
+            );
+
+        }
+
+
+        // ------------------------------------------
+        // SAVE AUTH DATA
+        // ------------------------------------------
+
+        localStorage.setItem(
+            "mykisht_token",
+            data.token
+        );
+
+
+        localStorage.setItem(
+            "mykisht_user",
+            JSON.stringify(data.user)
+        );
+
+
+        localStorage.setItem(
+            "mykisht_role",
+            "admin"
+        );
+
+
+        // ------------------------------------------
+        // SUCCESS
+        // ------------------------------------------
+
+        showMessage(
+            "Owner login successful!",
+            "success"
+        );
+
+
+        // ------------------------------------------
+        // DASHBOARD
+        // ------------------------------------------
+
+        setTimeout(() => {
+
+            window.location.href =
+                "ownerdashbord.html";
+
+        }, 700);
+
+
+    } catch (error) {
+
+        console.error(
+            "Owner login error:",
+            error
+        );
+
+
+        showMessage(
+            error.message ||
+            "Unable to login.",
+            "error"
+        );
+
+
+    } finally {
+
+        loginBtn.disabled = false;
+
+        loginBtn.textContent =
+            "Login as Owner";
+
+    }
+
+}
+
+
+// ======================================================
+// FORGOT PASSWORD
+// ======================================================
+
+function forgotPassword() {
+
+    showMessage(
+        "Password reset system will be added later.",
+        "error"
+    );
+
+}
+
+
+// ======================================================
+// BACK
+// ======================================================
+
+function goBack() {
+
+    window.location.href =
+        "my kisht.html";
+
+}
+
+
+// ======================================================
+// MESSAGE
+// ======================================================
+
+function showMessage(text, type) {
+
+    const message =
+        document.getElementById("message");
+
+
+    message.textContent =
+        text;
+
+
+    message.className =
+        `message ${type}`;
+
+}
+
+</script>
+
+</body>
+
+</html>

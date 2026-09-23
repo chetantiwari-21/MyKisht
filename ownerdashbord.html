@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>MyKisht - Owner Dashboard</title>
+
+    <link rel="stylesheet" href="kisht.css">
+
+    <style>
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard {
+            width: min(1150px, 92%);
+            margin: 30px auto;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .brand p {
+            margin: 5px 0 0;
+            color: var(--muted);
+        }
+
+        .logout-btn {
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: var(--card-light);
+        }
+
+        .welcome {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+
+        .welcome h2 {
+            margin: 0 0 7px;
+        }
+
+        .welcome p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .card .label {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .card .value {
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .collection-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            margin: 0 0 18px;
+            font-size: 20px;
+        }
+
+        .collection-total {
+            font-size: 34px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .customer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .customer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--card-light);
+            border-radius: 12px;
+        }
+
+        .customer-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .customer-info {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .customer-amount {
+            font-weight: bold;
+            font-size: 17px;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 25px 10px;
+        }
+
+        .error {
+            display: none;
+            background: rgba(255, 70, 70, 0.1);
+            border: 1px solid rgba(255, 70, 70, 0.3);
+            color: #ff8c8c;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            text-decoration: none;
+            display: inline-block;
+            padding: 12px 18px;
+            border-radius: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-family: inherit;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .action-btn.secondary {
+            background: var(--card);
+            border: 1px solid var(--border);
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--muted);
+            padding: 35px;
+        }
+
+        @media (max-width: 850px) {
+
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+        @media (max-width: 550px) {
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                align-items: flex-start;
+            }
+
+            .customer-row {
+                align-items: flex-start;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="dashboard">
+
+
+    <!-- TOP BAR -->
+
+    <div class="topbar">
+
+        <div class="brand">
+
+            <h1>MyKisht</h1>
+
+            <p>Owner Dashboard</p>
+
+        </div>
+
+
+        <button
+            class="logout-btn"
+            type="button"
+            onclick="logout()"
+        >
+            Logout
+        </button>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+        id="errorBox"
+        class="error"
+    ></div>
+
+
+    <!-- WELCOME -->
+
+    <div class="welcome">
+
+        <h2>
+            Owner Dashboard 👋
+        </h2>
+
+        <p>
+            Aaj ka collection aur total jama/baki yahan dekhein.
+        </p>
+
+    </div>
+
+
+    <!-- ACTIONS -->
+
+    <div class="actions">
+
+
+        <!-- ADD CUSTOMER -->
+
+        <button
+            type="button"
+            class="action-btn"
+            onclick="openAddCustomer()"
+        >
+            + Add Customer
+        </button>
+
+
+        <!-- ADD LOAN -->
+
+        <button
+            type="button"
+            class="action-btn"
+            onclick="openAddLoan()"
+        >
+            + Add Loan
+        </button>
+
+
+        <!-- ADD COLLECTION -->
+
+        <button
+            type="button"
+            class="action-btn"
+            onclick="openCollection()"
+        >
+            + Add Collection
+        </button>
+
+
+    </div>
+
+
+    <!-- LOADING -->
+
+    <div
+        id="loading"
+        class="loading"
+    >
+        Loading dashboard...
+    </div>
+
+
+    <!-- DASHBOARD CONTENT -->
+
+    <div
+        id="dashboardContent"
+        style="display:none;"
+    >
+
+
+        <!-- SUMMARY -->
+
+        <div class="cards">
+
+
+            <!-- TOTAL LOAN -->
+
+            <div class="card">
+
+                <div class="label">
+                    Total Loan
+                </div>
+
+                <div
+                    class="value"
+                    id="totalLoan"
+                >
+                    ₹0
+                </div>
+
+            </div>
+
+
+            <!-- TOTAL JAMA -->
+
+            <div class="card">
+
+                <div class="label">
+                    Total Jama
+                </div>
+
+                <div
+                    class="value"
+                    id="totalReceived"
+                >
+                    ₹0
+                </div>
+
+            </div>
+
+
+            <!-- TOTAL BAKI -->
+
+            <div class="card">
+
+                <div class="label">
+                    Total Baki
+                </div>
+
+                <div
+                    class="value"
+                    id="totalOutstanding"
+                >
+                    ₹0
+                </div>
+
+            </div>
+
+
+            <!-- CUSTOMERS -->
+
+            <div class="card">
+
+                <div class="label">
+                    Customers
+                </div>
+
+                <div
+                    class="value"
+                    id="totalCustomers"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- TODAY COLLECTION -->
+
+        <div class="collection-box">
+
+            <h3 class="section-title">
+                Today's Collection
+            </h3>
+
+            <div
+                class="collection-total"
+                id="todayCollection"
+            >
+                ₹0
+            </div>
+
+            <div class="muted">
+                Aaj total kitna jama hua
+            </div>
+
+        </div>
+
+
+        <!-- CUSTOMER COLLECTION -->
+
+        <div class="collection-box">
+
+            <h3 class="section-title">
+                Aaj Kis Customer Ne Kitna Diya
+            </h3>
+
+
+            <div
+                id="customerList"
+                class="customer-list"
+            >
+
+                <div class="empty">
+                    Aaj abhi koi collection nahi hai.
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// BACKEND
+// =====================================================
+
+const API_URL = "http://localhost:5000";
+
+
+// =====================================================
+// AUTH
+// =====================================================
+
+const token =
+    localStorage.getItem("mykisht_token") ||
+    localStorage.getItem("myKishtToken");
+
+
+if (!token) {
+
+    window.location.href = "owner.html";
+
+}
+
+
+// =====================================================
+// PAGE NAVIGATION
+// =====================================================
+
+function openAddCustomer() {
+
+    window.location.href = "./adduser.html";
+
+}
+
+
+function openAddLoan() {
+
+    window.location.href = "./addloan.html";
+
+}
+
+
+function openCollection() {
+
+    window.location.href = "./collection.html";
+
+}
+
+
+// =====================================================
+// API REQUEST
+// =====================================================
+
+async function apiRequest(endpoint) {
+
+    const response = await fetch(
+        API_URL + endpoint,
+        {
+            method: "GET",
+
+            headers: {
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            }
+        }
+    );
+
+
+    const contentType =
+        response.headers.get("content-type") || "";
+
+
+    let data;
+
+
+    if (contentType.includes("application/json")) {
+
+        data = await response.json();
+
+    } else {
+
+        throw new Error(
+            `Server returned an unexpected response (${response.status}).`
+        );
+
+    }
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.message ||
+            "Something went wrong."
+        );
+
+    }
+
+
+    return data;
+
+}
+
+
+// =====================================================
+// MONEY
+// =====================================================
+
+function money(value) {
+
+    return "₹" + Number(
+        value || 0
+    ).toLocaleString(
+        "en-IN",
+        {
+            maximumFractionDigits: 2
+        }
+    );
+
+}
+
+
+// =====================================================
+// ERROR
+// =====================================================
+
+function showError(message) {
+
+    const box =
+        document.getElementById("errorBox");
+
+
+    box.innerText = message;
+
+
+    box.style.display = "block";
+
+}
+
+
+// =====================================================
+// LOAD DASHBOARD
+// =====================================================
+
+async function loadDashboard() {
+
+    try {
+
+
+        const [
+
+            dashboardResponse,
+
+            todayResponse,
+
+            collectionResponse,
+
+            loansResponse
+
+        ] = await Promise.all([
+
+
+            apiRequest(
+                "/api/admin/dashboard"
+            ),
+
+
+            apiRequest(
+                "/api/collection/today"
+            ),
+
+
+            apiRequest(
+                "/api/collection"
+            ),
+
+
+            apiRequest(
+                "/api/loans"
+            )
+
+
+        ]);
+
+
+        // =================================================
+        // ADMIN DASHBOARD
+        // =================================================
+
+        const dashboard =
+            dashboardResponse.dashboard ||
+            dashboardResponse.data ||
+            dashboardResponse ||
+            {};
+
+
+        // =================================================
+        // CUSTOMERS
+        // =================================================
+
+        const totalCustomers =
+            dashboard.total_users ??
+            dashboard.total_customers ??
+            dashboard.totalCustomers ??
+            0;
+
+
+        document.getElementById(
+            "totalCustomers"
+        ).innerText =
+            totalCustomers;
+
+
+        // =================================================
+        // LOANS
+        // =================================================
+
+        let loans =
+            loansResponse.loans ||
+            loansResponse.data ||
+            [];
+
+
+        if (!Array.isArray(loans)) {
+
+            loans = [];
+
+        }
+
+
+        // =================================================
+        // TOTAL LOAN
+        // =================================================
+
+        let totalLoan = 0;
+
+
+        loans.forEach(function (loan) {
+
+            totalLoan += Number(
+
+                loan.total_payable ??
+                loan.totalPayable ??
+                loan.principal_amount ??
+                loan.principalAmount ??
+                0
+
+            );
+
+        });
+
+
+        // =================================================
+        // COLLECTIONS
+        // =================================================
+
+        let collections =
+            collectionResponse.collections ||
+            collectionResponse.data ||
+            [];
+
+
+        if (!Array.isArray(collections)) {
+
+            collections = [];
+
+        }
+
+
+        // =================================================
+        // TOTAL JAMA
+        // =================================================
+
+        let totalReceived = 0;
+
+
+        collections.forEach(function (item) {
+
+            totalReceived += Number(
+
+                item.amount ||
+                item.paid_amount ||
+                0
+
+            );
+
+        });
+
+
+        // =================================================
+        // TOTAL BAKI
+        // =================================================
+
+        let totalOutstanding =
+            totalLoan -
+            totalReceived;
+
+
+        if (totalOutstanding < 0) {
+
+            totalOutstanding = 0;
+
+        }
+
+
+        // =================================================
+        // SHOW SUMMARY
+        // =================================================
+
+        document.getElementById(
+            "totalLoan"
+        ).innerText =
+            money(totalLoan);
+
+
+        document.getElementById(
+            "totalReceived"
+        ).innerText =
+            money(totalReceived);
+
+
+        document.getElementById(
+            "totalOutstanding"
+        ).innerText =
+            money(totalOutstanding);
+
+
+        document.getElementById(
+            "totalCustomers"
+        ).innerText =
+            totalCustomers;
+
+
+        // =================================================
+        // TODAY'S COLLECTION
+        // =================================================
+
+        const today =
+            todayResponse.data ||
+            todayResponse ||
+            {};
+
+
+        const todayTotal =
+            today.total_collection ??
+            today.total_received ??
+            today.total ??
+            today.amount ??
+            0;
+
+
+        document.getElementById(
+            "todayCollection"
+        ).innerText =
+            money(todayTotal);
+
+
+        // =================================================
+        // TODAY CUSTOMER COLLECTION
+        // =================================================
+
+        const todayCollections =
+            collections.filter(function (item) {
+
+
+                if (!item.paid_at) {
+
+                    return false;
+
+                }
+
+
+                const date =
+                    new Date(
+                        item.paid_at
+                    );
+
+
+                const todayDate =
+                    new Date();
+
+
+                return (
+
+                    date.getFullYear() ===
+                    todayDate.getFullYear()
+
+                    &&
+
+                    date.getMonth() ===
+                    todayDate.getMonth()
+
+                    &&
+
+                    date.getDate() ===
+                    todayDate.getDate()
+
+                );
+
+            });
+
+
+        renderCustomers(
+            todayCollections
+        );
+
+
+        // =================================================
+        // SHOW DASHBOARD
+        // =================================================
+
+        document.getElementById(
+            "loading"
+        ).style.display =
+            "none";
+
+
+        document.getElementById(
+            "dashboardContent"
+        ).style.display =
+            "block";
+
+
+    } catch (error) {
+
+
+        console.error(
+            "Dashboard error:",
+            error
+        );
+
+
+        document.getElementById(
+            "loading"
+        ).style.display =
+            "none";
+
+
+        showError(
+
+            error.message ||
+            "Dashboard load nahi ho saka."
+
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// CUSTOMER COLLECTION
+// =====================================================
+
+function renderCustomers(collections) {
+
+
+    const list =
+        document.getElementById(
+            "customerList"
+        );
+
+
+    if (!collections.length) {
+
+
+        list.innerHTML = `
+
+            <div class="empty">
+
+                Aaj abhi koi collection nahi hai.
+
+            </div>
+
+        `;
+
+
+        return;
+
+    }
+
+
+    const grouped = {};
+
+
+    collections.forEach(function (item) {
+
+
+        const customerId =
+
+            item.customer_id ||
+            item.customerId ||
+            item.customer?.id ||
+            item.mobile ||
+            item.customer_name ||
+            "unknown";
+
+
+        const customerName =
+
+            item.customer_name ||
+            item.full_name ||
+            item.customer?.full_name ||
+            item.customer?.name ||
+            "Customer";
+
+
+        const mobile =
+
+            item.mobile ||
+            item.customer?.mobile ||
+            "";
+
+
+        const amount =
+            Number(
+
+                item.amount ||
+                item.paid_amount ||
+                0
+
+            );
+
+
+        if (!grouped[customerId]) {
+
+
+            grouped[customerId] = {
+
+                name: customerName,
+
+                mobile: mobile,
+
+                amount: 0,
+
+                count: 0
+
+            };
+
+        }
+
+
+        grouped[customerId].amount +=
+            amount;
+
+
+        grouped[customerId].count++;
+
+    });
+
+
+    list.innerHTML = "";
+
+
+    Object.values(grouped).forEach(
+        function (customer) {
+
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "customer-row";
+
+
+            row.innerHTML = `
+
+                <div>
+
+                    <div class="customer-name">
+
+                        ${escapeHtml(
+                            customer.name
+                        )}
+
+                    </div>
+
+
+                    <div class="customer-info">
+
+                        ${
+                            customer.mobile
+
+                            ? escapeHtml(
+                                customer.mobile
+                            ) + " • "
+
+                            : ""
+                        }
+
+                        ${customer.count}
+                        collection
+
+                    </div>
+
+                </div>
+
+
+                <div class="customer-amount">
+
+                    ${money(
+                        customer.amount
+                    )}
+
+                </div>
+
+            `;
+
+
+            list.appendChild(row);
+
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// ESCAPE HTML
+// =====================================================
+
+function escapeHtml(text) {
+
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.innerText =
+        text ?? "";
+
+
+    return div.innerHTML;
+
+}
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+function logout() {
+
+
+    localStorage.removeItem(
+        "mykisht_token"
+    );
+
+
+    localStorage.removeItem(
+        "mykisht_user"
+    );
+
+
+    localStorage.removeItem(
+        "mykisht_role"
+    );
+
+
+    localStorage.removeItem(
+        "myKishtToken"
+    );
+
+
+    localStorage.removeItem(
+        "myKishtUser"
+    );
+
+
+    localStorage.removeItem(
+        "myKishtRole"
+    );
+
+
+    window.location.href =
+        "owner.html";
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+loadDashboard();
+
+
+</script>
+
+
+</body>
+
+</html>
