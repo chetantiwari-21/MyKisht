@@ -1,943 +1,693 @@
 const express = require("express");
-const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 
 require("dotenv").config({
-    path: path.join(__dirname, ".env")
+    path: path.join(__dirname, "backend.env")
 });
 
-const { initDatabase, query } = require("./db");
+const { query } = require("./db");
+const { authenticateToken } = require("./auth");
 
-const {
-    authenticateToken,
-    requireRole
-} = require("./auth");
-
-const authRoutes = require("./routes");
-
-// IMPORTANT:
-// Tumhari actual file ka naam forgotpassword.js hai
-const forgotPasswordRoutes = require("./forgotpassword");
-
-const customerRoutes = require("./customer");
-const adminRoutes = require("./admin");
-const loanRoutes = require("./losn");
-const reportRoutes = require("./report");
-const collectionRoutes = require("./collection");
-
-const {
-    runJobs,
-    scheduleJobs
-} = require("./index");
-
-const app = express();
-
-app.use(cors());
-
-const port = Number(process.env.PORT || 5000);
-
-const jwtSecret =
-    process.env.JWT_SECRET ||
-    "mykisht-development-secret";
-
-const ownerId =
-    process.env.OWNER_ID ||
-    "owner@mykisht.com";
-
-const ownerPassword =
-    process.env.OWNER_PASSWORD ||
-    "Owner@12345";
-
-const users = [];
-const loans = [];
-
-let databaseReady = false;
+const router = express.Router();
 
 
-// =====================================================
-// MIDDLEWARE
-// =====================================================
+// ============================================
+// CREATE JWT TOKEN
+// ============================================
 
-app.use(cors());
-
-app.use(express.json());
-
-app.use(
-    express.urlencoded({
-        extended: true
-    })
-);
-
-app.use(express.static(__dirname));
-
-
-// =====================================================
-// AUTH ROUTES
-// =====================================================
-
-app.use(
-    "/api/auth",
-    authRoutes
-);
-
-
-// =====================================================
-// FORGOT PASSWORD / OTP
-// =====================================================
-
-app.use(
-    "/api/auth/forgot-password",
-    forgotPasswordRoutes
-);
-
-
-// =====================================================
-// MAIN ROUTES
-// =====================================================
-
-app.use(
-    "/api/customer",
-    customerRoutes
-);
-
-app.use(
-    "/api/admin",
-    adminRoutes
-);
-
-app.use(
-    "/api/loans",
-    loanRoutes
-);
-
-app.use(
-    "/api/reports",
-    reportRoutes
-);
-
-app.use(
-    "/api/collection",
-    collectionRoutes
-);
-
-
-// =====================================================
-// TOKEN
-// =====================================================
-
-function createToken(payload) {
+function createToken(user) {
 
     return jwt.sign(
-        payload,
-        jwtSecret,
         {
-            expiresIn: "8h"
+            id: user.id,
+            role: user.role,
+            name: user.name
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: "7d"
         }
     );
 
 }
 
 
-// =====================================================
-// HEALTH
-// =====================================================
+// ============================================
+// CUSTOMER REGISTER
+// ============================================
 
-app.get(
-    "/api/health",
-    (req, res) => {
+router.post("/customer/register", async (req, res) => {
 
-        res.json({
-            ok: true,
-            service: "mykisht-backend",
-            database:
-                databaseReady
-                    ? "postgresql"
-                    : "memory"
-        });
+    try {
 
-    }
-);
+        const {
+            name,
+            mobile,
+            email,
+            address,
+            password
+        } = req.body;
 
 
-// =====================================================
-// LEGACY USER REGISTER
-// =====================================================
+        if (!name || !mobile || !password) {
 
-app.post(
-    "/api/user/register",
-    async (req, res) => {
+            return res.status(400).json({
+                success: false,
+                message: "Name, mobile and password are required."
+            });
 
-        try {
+        }
 
-            const {
-                name,
+
+        if (!/^[0-9]{10}$/.test(String(mobile))) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Enter a valid 10 digit mobile number."
+            });
+
+        }
+
+
+        if (String(password).length < 6) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Password must contain at least 6 characters."
+            });
+
+        }
+
+
+        const existingCustomer = await query(
+            `
+            SELECT id
+            FROM customers
+            WHERE mobile = $1
+            LIMIT 1
+            `,
+            [mobile]
+        );
+
+
+        if (existingCustomer.rows.length > 0) {
+
+            return res.status(409).json({
+                success: false,
+                message: "Customer with this mobile number already exists."
+            });
+
+        }
+
+
+        const passwordHash = await bcrypt.hash(
+            String(password),
+            12
+        );
+
+
+        const result = await query(
+            `
+            INSERT INTO customers
+            (
+                full_name,
                 mobile,
                 email,
                 address,
-                password
-            } = req.body;
-
-
-            if (
-                !name ||
-                !mobile ||
-                !password
-            ) {
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Name, mobile and password are required."
-                });
-
-            }
-
-
-            if (
-                !/^[0-9]{10}$/.test(
-                    String(mobile)
-                )
-            ) {
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Enter a valid 10 digit mobile number."
-                });
-
-            }
-
-
-            if (
-                String(password).length < 6
-            ) {
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Password must be at least 6 characters."
-                });
-
-            }
-
-
-            if (databaseReady) {
-
-                const existing =
-                    await query(
-                        `
-                        SELECT id
-                        FROM customers
-                        WHERE mobile = $1
-                        LIMIT 1
-                        `,
-                        [mobile]
-                    );
-
-
-                if (
-                    existing.rows.length > 0
-                ) {
-
-                    return res.status(409).json({
-                        success: false,
-                        message:
-                            "Mobile number is already registered."
-                    });
-
-                }
-
-
-                const passwordHash =
-                    await bcrypt.hash(
-                        password,
-                        12
-                    );
-
-
-                const result =
-                    await query(
-                        `
-                        INSERT INTO customers
-                        (
-                            full_name,
-                            mobile,
-                            email,
-                            address,
-                            password_hash
-                        )
-                        VALUES
-                        (
-                            $1,
-                            $2,
-                            $3,
-                            $4,
-                            $5
-                        )
-                        RETURNING
-                            id,
-                            full_name,
-                            mobile,
-                            email,
-                            address
-                        `,
-                        [
-                            name,
-                            mobile,
-                            email || null,
-                            address || null,
-                            passwordHash
-                        ]
-                    );
-
-
-                return res.status(201).json({
-
-                    success: true,
-
-                    message:
-                        "Account created successfully.",
-
-                    customer:
-                        result.rows[0]
-
-                });
-
-            }
-
-
-            return res.status(503).json({
-
-                success: false,
-
-                message:
-                    "Database is unavailable."
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "Register error:",
-                error
-            );
-
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to create account."
-
-            });
-
-        }
-
-    }
-);
-
-
-// =====================================================
-// LEGACY USER LOGIN
-// =====================================================
-
-app.post(
-    "/api/user/login",
-    async (req, res) => {
-
-        try {
-
-            const {
+                password_hash
+            )
+            VALUES
+            ($1, $2, $3, $4, $5)
+            RETURNING
+                id,
+                full_name,
                 mobile,
-                password
-            } = req.body;
+                email,
+                address
+            `,
+            [
+                name,
+                mobile,
+                email || null,
+                address || null,
+                passwordHash
+            ]
+        );
 
 
-            if (
-                !mobile ||
-                !password
-            ) {
+        const customer = result.rows[0];
 
-                return res.status(400).json({
 
-                    success: false,
+        return res.status(201).json({
 
-                    message:
-                        "Mobile and password are required."
+            success: true,
 
-                });
+            message: "Customer account created successfully.",
 
+            customer: {
+                id: customer.id,
+                name: customer.full_name,
+                mobile: customer.mobile,
+                email: customer.email,
+                address: customer.address
             }
 
-
-            if (databaseReady) {
-
-                const result =
-                    await query(
-                        `
-                        SELECT
-                            id,
-                            full_name,
-                            mobile,
-                            email,
-                            password_hash,
-                            is_active
-                        FROM customers
-                        WHERE mobile = $1
-                        LIMIT 1
-                        `,
-                        [mobile]
-                    );
+        });
 
 
-                if (
-                    result.rows.length === 0
-                ) {
+    } catch (error) {
 
-                    return res.status(401).json({
-
-                        success: false,
-
-                        message:
-                            "Invalid mobile number or password."
-
-                    });
-
-                }
+        console.error(
+            "Customer registration error:",
+            error
+        );
 
 
-                const customer =
-                    result.rows[0];
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Unable to create customer account."
+
+        });
+
+    }
+
+});
 
 
-                if (
-                    customer.is_active === false
-                ) {
+// ============================================
+// CUSTOMER LOGIN
+// ============================================
 
-                    return res.status(403).json({
+router.post("/customer/login", async (req, res) => {
 
-                        success: false,
+    try {
 
-                        message:
-                            "Your account is inactive."
-
-                    });
-
-                }
+        const {
+            mobile,
+            password
+        } = req.body;
 
 
-                const valid =
-                    await bcrypt.compare(
-                        password,
-                        customer.password_hash
-                    );
+        if (!mobile || !password) {
 
-
-                if (!valid) {
-
-                    return res.status(401).json({
-
-                        success: false,
-
-                        message:
-                            "Invalid mobile number or password."
-
-                    });
-
-                }
-
-
-                const token =
-                    createToken({
-
-                        id:
-                            customer.id,
-
-                        role:
-                            "customer",
-
-                        name:
-                            customer.full_name
-
-                    });
-
-
-                return res.json({
-
-                    success: true,
-
-                    message:
-                        "Login successful.",
-
-                    token,
-
-                    user: {
-
-                        id:
-                            customer.id,
-
-                        name:
-                            customer.full_name,
-
-                        mobile:
-                            customer.mobile,
-
-                        email:
-                            customer.email,
-
-                        role:
-                            "customer"
-
-                    }
-
-                });
-
-            }
-
-
-            return res.status(503).json({
-
+            return res.status(400).json({
                 success: false,
-
-                message:
-                    "Database is unavailable."
-
+                message: "Mobile and password are required."
             });
 
-
-        } catch (error) {
-
-            console.error(
-                "Login error:",
-                error
-            );
+        }
 
 
-            return res.status(500).json({
+        const result = await query(
+            `
+            SELECT
+                id,
+                full_name,
+                mobile,
+                email,
+                password_hash,
+                is_active
+            FROM customers
+            WHERE mobile = $1
+            LIMIT 1
+            `,
+            [mobile]
+        );
+
+
+        if (result.rows.length === 0) {
+
+            return res.status(401).json({
+                success: false,
+                message: "Invalid mobile number or password."
+            });
+
+        }
+
+
+        const customer = result.rows[0];
+
+
+        if (customer.is_active === false) {
+
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been deactivated."
+            });
+
+        }
+
+
+        const passwordMatch = await bcrypt.compare(
+            String(password),
+            customer.password_hash
+        );
+
+
+        if (!passwordMatch) {
+
+            return res.status(401).json({
+                success: false,
+                message: "Invalid mobile number or password."
+            });
+
+        }
+
+
+        const token = createToken({
+
+            id: customer.id,
+
+            role: "customer",
+
+            name: customer.full_name
+
+        });
+
+
+        return res.json({
+
+            success: true,
+
+            message: "Customer login successful.",
+
+            token,
+
+            user: {
+
+                id: customer.id,
+
+                name: customer.full_name,
+
+                mobile: customer.mobile,
+
+                email: customer.email,
+
+                role: "customer"
+
+            }
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Customer login error:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Unable to login."
+
+        });
+
+    }
+
+});
+
+
+// ============================================
+// ADMIN / OWNER LOGIN
+// ============================================
+
+router.post("/admin/login", async (req, res) => {
+
+    try {
+
+        const {
+            email,
+            password
+        } = req.body;
+
+
+        if (!email || !password) {
+
+            return res.status(400).json({
 
                 success: false,
 
-                message:
-                    "Unable to login."
+                message: "Email and password are required."
 
             });
 
         }
 
-    }
-);
+
+        const loginEmail = String(email)
+            .trim()
+            .toLowerCase();
 
 
-// =====================================================
-// LEGACY OWNER LOGIN
-// =====================================================
+        // ========================================
+        // OWNER LOGIN
+        // ========================================
 
-app.post(
-    "/api/owner/login",
-    async (req, res) => {
+        const ownerId = String(
+            process.env.OWNER_ID || "owner@mykisht.com"
+        )
+            .trim()
+            .toLowerCase();
 
-        try {
 
-            const {
+        const ownerPassword = String(
+            process.env.OWNER_PASSWORD || "Owner@12345"
+        );
+
+
+        if (
+            loginEmail === ownerId &&
+            String(password) === ownerPassword
+        ) {
+
+            const token = createToken({
+
+                id: 1,
+
+                role: "admin",
+
+                name: "MyKisht Owner"
+
+            });
+
+
+            return res.json({
+
+                success: true,
+
+                message: "Admin login successful.",
+
+                token,
+
+                user: {
+
+                    id: 1,
+
+                    name: "MyKisht Owner",
+
+                    email: ownerId,
+
+                    role: "admin"
+
+                }
+
+            });
+
+        }
+
+
+        // ========================================
+        // DATABASE ADMIN LOGIN
+        // ========================================
+
+        const result = await query(
+            `
+            SELECT
+                id,
+                full_name,
                 email,
-                password
-            } = req.body;
+                mobile,
+                password_hash,
+                is_active
+            FROM admins
+            WHERE LOWER(email) = $1
+            LIMIT 1
+            `,
+            [loginEmail]
+        );
 
 
-            if (
-                email === ownerId &&
-                password === ownerPassword
-            ) {
-
-                const token =
-                    createToken({
-
-                        id: 1,
-
-                        role: "admin",
-
-                        name:
-                            "MyKisht Owner"
-
-                    });
-
-
-                return res.json({
-
-                    success: true,
-
-                    message:
-                        "Owner login successful.",
-
-                    token,
-
-                    user: {
-
-                        id: 1,
-
-                        name:
-                            "MyKisht Owner",
-
-                        email:
-                            ownerId,
-
-                        role:
-                            "admin"
-
-                    }
-
-                });
-
-            }
-
+        if (result.rows.length === 0) {
 
             return res.status(401).json({
 
                 success: false,
 
-                message:
-                    "Invalid owner credentials."
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "Owner login error:",
-                error
-            );
-
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to login owner."
+                message: "Invalid email or password."
 
             });
 
         }
 
-    }
-);
+
+        const admin = result.rows[0];
 
 
-// =====================================================
-// ADD CUSTOMER
-// =====================================================
+        if (admin.is_active === false) {
 
-app.post(
-    "/api/owner/users",
-    authenticateToken,
-    requireRole("admin"),
-    async (req, res) => {
-
-        try {
-
-            const {
-                name,
-                mobile,
-                address
-            } = req.body;
-
-
-            if (
-                !name ||
-                !mobile
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Customer name and mobile are required."
-
-                });
-
-            }
-
-
-            if (
-                !/^[0-9]{10}$/.test(
-                    String(mobile)
-                )
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Enter a valid 10 digit mobile number."
-
-                });
-
-            }
-
-
-            if (!databaseReady) {
-
-                return res.status(503).json({
-
-                    success: false,
-
-                    message:
-                        "Database is unavailable."
-
-                });
-
-            }
-
-
-            const existing =
-                await query(
-                    `
-                    SELECT id
-                    FROM customers
-                    WHERE mobile = $1
-                    LIMIT 1
-                    `,
-                    [mobile]
-                );
-
-
-            if (
-                existing.rows.length > 0
-            ) {
-
-                return res.status(409).json({
-
-                    success: false,
-
-                    message:
-                        "Customer already exists."
-
-                });
-
-            }
-
-
-            const passwordHash =
-                await bcrypt.hash(
-                    String(mobile),
-                    12
-                );
-
-
-            const result =
-                await query(
-                    `
-                    INSERT INTO customers
-                    (
-                        full_name,
-                        mobile,
-                        address,
-                        password_hash,
-                        is_active
-                    )
-                    VALUES
-                    (
-                        $1,
-                        $2,
-                        $3,
-                        $4,
-                        true
-                    )
-                    RETURNING
-                        id,
-                        full_name,
-                        mobile,
-                        address
-                    `,
-                    [
-                        name,
-                        mobile,
-                        address || null,
-                        passwordHash
-                    ]
-                );
-
-
-            return res.status(201).json({
-
-                success: true,
-
-                message:
-                    "Customer added successfully.",
-
-                customer:
-                    result.rows[0]
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "Add customer error:",
-                error
-            );
-
-
-            return res.status(500).json({
+            return res.status(403).json({
 
                 success: false,
 
-                message:
-                    "Unable to add customer.",
-
-                error:
-                    error.message
+                message: "Admin account is inactive."
 
             });
 
         }
 
-    }
-);
+
+        const passwordMatch = await bcrypt.compare(
+            String(password),
+            admin.password_hash
+        );
 
 
-// =====================================================
-// API 404
-// =====================================================
+        if (!passwordMatch) {
 
-app.use(
-    "/api",
-    (req, res) => {
+            return res.status(401).json({
 
-        return res.status(404).json({
+                success: false,
+
+                message: "Invalid email or password."
+
+            });
+
+        }
+
+
+        const token = createToken({
+
+            id: admin.id,
+
+            role: "admin",
+
+            name: admin.full_name
+
+        });
+
+
+        return res.json({
+
+            success: true,
+
+            message: "Admin login successful.",
+
+            token,
+
+            user: {
+
+                id: admin.id,
+
+                name: admin.full_name,
+
+                email: admin.email,
+
+                mobile: admin.mobile,
+
+                role: "admin"
+
+            }
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Admin login error:",
+            error
+        );
+
+
+        return res.status(500).json({
 
             success: false,
 
-            message:
-                "API endpoint not found.",
-
-            path:
-                req.originalUrl
+            message: "Unable to login."
 
         });
 
     }
-);
+
+});
 
 
-// =====================================================
-// HOME PAGE
-// =====================================================
+// ============================================
+// CURRENT USER
+// ============================================
 
-app.get(
-    "/",
-    (req, res) => {
+router.get("/me", authenticateToken, async (req, res) => {
 
-        res.sendFile(
-            path.join(
-                __dirname,
-                "my kisht.html"
-            )
-        );
+    try {
 
-    }
-);
+        if (req.user.role === "customer") {
 
-
-// =====================================================
-// DATABASE + START SERVER
-// =====================================================
-
-initDatabase()
-    .then(
-        ready => {
-
-            databaseReady =
-                Boolean(ready);
-
-
-            console.log(
-                databaseReady
-                    ? "✅ PostgreSQL database ready."
-                    : "⚠️ Database unavailable."
+            const result = await query(
+                `
+                SELECT
+                    id,
+                    full_name,
+                    mobile,
+                    email,
+                    address,
+                    is_active,
+                    created_at
+                FROM customers
+                WHERE id = $1
+                LIMIT 1
+                `,
+                [req.user.id]
             );
 
 
-            app.listen(
-                port,
-                () => {
+            if (result.rows.length === 0) {
 
-                    console.log("");
-                    console.log(
-                        "======================================"
-                    );
+                return res.status(404).json({
 
-                    console.log(
-                        `🚀 MyKisht running on port ${port}`
-                    );
+                    success: false,
 
-                    console.log(
-                        `🌐 http://localhost:${port}`
-                    );
+                    message: "Customer not found."
 
-                    console.log(
-                        "🔐 Forgot Password / OTP ready"
-                    );
+                });
 
-                    console.log(
-                        "======================================"
-                    );
-
-                    console.log("");
+            }
 
 
-                    try {
+            return res.json({
 
-                        if (
-                            typeof runJobs ===
-                            "function"
-                        ) {
+                success: true,
 
-                            runJobs();
+                role: "customer",
 
-                        }
+                user: result.rows[0]
+
+            });
+
+        }
 
 
-                        if (
-                            typeof scheduleJobs ===
-                            "function"
-                        ) {
+        if (req.user.role === "admin") {
 
-                            scheduleJobs();
+            // Owner login uses the Render environment credentials.
+            // It does not require an admins table row.
+            if (Number(req.user.id) === 1) {
 
-                        }
+                return res.json({
 
-                    } catch (jobError) {
+                    success: true,
 
-                        console.error(
-                            "Background job error:",
-                            jobError.message
-                        );
+                    role: "admin",
+
+                    user: {
+
+                        id: 1,
+
+                        full_name: "MyKisht Owner",
+
+                        email:
+                            process.env.OWNER_ID ||
+                            "owner@mykisht.com",
+
+                        mobile: null,
+
+                        is_active: true
 
                     }
 
-                }
+                });
+
+            }
+
+
+            const result = await query(
+                `
+                SELECT
+                    id,
+                    full_name,
+                    email,
+                    mobile,
+                    is_active,
+                    created_at
+                FROM admins
+                WHERE id = $1
+                LIMIT 1
+                `,
+                [req.user.id]
             );
 
+
+            if (result.rows.length === 0) {
+
+                return res.status(404).json({
+
+                    success: false,
+
+                    message: "Admin not found."
+
+                });
+
+            }
+
+
+            return res.json({
+
+                success: true,
+
+                role: "admin",
+
+                user: result.rows[0]
+
+            });
+
         }
-    )
-    .catch(
-        error => {
 
-            console.error(
-                "❌ Server startup error:",
-                error
-            );
 
-            process.exit(1);
+        return res.status(403).json({
 
-        }
-    );
+            success: false,
+
+            message: "Unknown account type."
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Get current user error:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Unable to fetch account details."
+
+        });
+
+    }
+
+});
+
+
+module.exports = router;
