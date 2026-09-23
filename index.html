@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>MyKisht - Loan Management</title>
+    <link rel="stylesheet" href="kisht.css">
+</head>
+
+<body>
+
+    <div class="page">
+
+        <!-- Logo -->
+        <div class="logo">
+            <div class="logo-icon">₹</div>
+
+            <div>
+                <h1>MyKisht</h1>
+                <p>Simple. Secure. Organized.</p>
+            </div>
+        </div>
+
+
+        <!-- Main Card -->
+        <div class="login-card">
+
+            <div class="welcome-icon">
+                ₹
+            </div>
+
+            <h2>Welcome to MyKisht</h2>
+
+            <p class="subtitle">
+                Manage loans and installments easily.
+            </p>
+
+
+            <h3>How do you want to continue?</h3>
+
+
+            <!-- User Login -->
+            <button class="account-option user-option"
+                    onclick="goToUserLogin()">
+
+                <div class="option-icon user-icon">
+                    👤
+                </div>
+
+                <div class="option-text">
+                    <strong>Login as User</strong>
+
+                    <span>
+                        Check your loan, installments,
+                        balance and installment history.
+                    </span>
+                </div>
+
+                <div class="arrow">
+                    →
+                </div>
+
+            </button>
+
+
+            <!-- Owner Login -->
+            <button class="account-option owner-option"
+                    onclick="goToOwnerLogin()">
+
+                <div class="option-icon owner-icon">
+                    👑
+                </div>
+
+                <div class="option-text">
+                    <strong>Login as Owner</strong>
+
+                    <span>
+                        Manage users, loans,
+                        reminders and reports.
+                    </span>
+                </div>
+
+                <div class="arrow">
+                    →
+                </div>
+
+            </button>
+
+
+            <div class="security-note">
+                🔒 Your account information is protected.
+            </div>
+
+        </div>
+
+
+        <!-- Footer -->
+        <footer>
+            <p>© 2026 MyKisht. All rights reserved.</p>
+        </footer>
+
+    </div>
+
+
+    <script>
+
+        function goToUserLogin() {
+            window.location.href = "userlogin.html";
+        }
+
+
+        function goToOwnerLogin() {
+            window.location.href = "owner.html";
+        }
+
+    </script>
+
+</body>
+</html>
