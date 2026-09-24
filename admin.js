@@ -116,12 +116,6 @@ router.get(
             `);
 
 
-            const totalPayable =
-                Number(
-                    loans.rows[0].total_payable
-                );
-
-
             res.json({
 
                 success: true,
@@ -144,7 +138,9 @@ router.get(
                         ),
 
                     total_payable:
-                        totalPayable,
+                        Number(
+                            loans.rows[0].total_payable
+                        ),
 
                     overdue_installments:
                         Number(
@@ -194,57 +190,56 @@ router.get(
             const result =
                 await query(`
 
-                SELECT
+                    SELECT
 
-                    c.id,
+                        c.id,
 
-                    c.full_name,
+                        c.full_name,
 
-                    c.mobile,
+                        c.mobile,
 
-                    c.email,
+                        c.email,
 
-                    c.address,
+                        c.address,
 
-                    c.is_active,
+                        c.is_active,
 
-                    c.created_at,
+                        c.created_at,
 
-                    COUNT(
-                        DISTINCT l.id
-                    ) AS total_loans,
+                        COUNT(
+                            DISTINCT l.id
+                        ) AS total_loans,
 
-                    COALESCE(
+                        COALESCE(
 
-                        SUM(
+                            SUM(
 
-                            CASE
+                                CASE
 
-                                WHEN l.status = 'active'
+                                    WHEN l.status = 'active'
 
-                                THEN l.total_payable
+                                    THEN l.total_payable
 
-                                ELSE 0
+                                    ELSE 0
 
-                            END
+                                END
 
-                        ),
+                            ),
 
-                        0
+                            0
 
-                    ) AS total_payable
+                        ) AS total_payable
 
-                FROM customers c
+                    FROM customers c
 
-                LEFT JOIN loans l
+                    LEFT JOIN loans l
+                        ON l.customer_id = c.id
 
-                    ON l.customer_id = c.id
+                    GROUP BY c.id
 
-                GROUP BY c.id
+                    ORDER BY c.created_at DESC
 
-                ORDER BY c.created_at DESC
-
-            `);
+                `);
 
 
             res.json({
@@ -341,29 +336,17 @@ router.get(
                     SELECT
 
                         id,
-
                         customer_id,
-
                         principal_amount,
-
                         interest_rate,
-
                         interest_amount,
-
                         total_payable,
-
                         emi_amount,
-
                         total_installments,
-
                         frequency,
-
                         start_date,
-
                         end_date,
-
                         status,
-
                         created_at
 
                     FROM loans
@@ -478,19 +461,12 @@ router.get(
                     SELECT
 
                         id,
-
                         loan_id,
-
                         installment_number,
-
                         due_date,
-
                         amount,
-
                         paid_amount,
-
                         status,
-
                         paid_at
 
                     FROM emi_schedule
@@ -589,13 +565,11 @@ router.post(
         try {
 
             const {
-
                 name,
                 mobile,
                 email,
                 address,
                 password
-
             } = req.body;
 
 
@@ -780,18 +754,14 @@ router.get(
                     FROM emi_schedule e
 
                     INNER JOIN loans l
-
                         ON l.id = e.loan_id
 
                     INNER JOIN customers c
-
                         ON c.id = l.customer_id
 
                     WHERE e.status IN (
-
                         'overdue',
                         'missed'
-
                     )
 
                     ORDER BY
@@ -837,21 +807,18 @@ router.get(
 
 
 // ======================================================
-// DELETE CUSTOMER + ALL RELATED DATA
+// DELETE CUSTOMER + ALL EXISTING RELATED DATA
 // ======================================================
 //
-// Deletes:
+// Existing database tables confirmed by errors:
+// - customers
+// - loans
+// - emi_schedule
+// - collections
+// - reminders
 //
-// Customer
-// Loans
-// EMI schedule
-// Collections
-// Payments
-// Reminders
-//
-// NOTE:
-// payment_receipts is NOT used because
-// that table does not exist in the database.
+// payments/payment_receipts are NOT used because
+// those tables do not exist in the current database.
 // ======================================================
 
 router.delete(
@@ -869,9 +836,9 @@ router.delete(
             } = req.params;
 
 
-            // ==================================================
-            // VALIDATE CUSTOMER ID
-            // ==================================================
+            // --------------------------------------------------
+            // VALIDATE ID
+            // --------------------------------------------------
 
             if (
                 !/^[0-9]+$/.test(
@@ -891,9 +858,9 @@ router.delete(
             }
 
 
-            // ==================================================
+            // --------------------------------------------------
             // DATABASE CHECK
-            // ==================================================
+            // --------------------------------------------------
 
             if (!pool) {
 
@@ -909,26 +876,26 @@ router.delete(
             }
 
 
-            // ==================================================
-            // GET DATABASE CLIENT
-            // ==================================================
+            // --------------------------------------------------
+            // CONNECT
+            // --------------------------------------------------
 
             client =
                 await pool.connect();
 
 
-            // ==================================================
+            // --------------------------------------------------
             // START TRANSACTION
-            // ==================================================
+            // --------------------------------------------------
 
             await client.query(
                 "BEGIN"
             );
 
 
-            // ==================================================
-            // CHECK CUSTOMER
-            // ==================================================
+            // --------------------------------------------------
+            // FIND CUSTOMER
+            // --------------------------------------------------
 
             const customer =
                 await client.query(`
@@ -936,9 +903,7 @@ router.delete(
                     SELECT
 
                         id,
-
                         full_name,
-
                         mobile
 
                     FROM customers
@@ -973,9 +938,9 @@ router.delete(
             }
 
 
-            // ==================================================
-            // GET ALL CUSTOMER LOANS
-            // ==================================================
+            // --------------------------------------------------
+            // GET CUSTOMER LOANS
+            // --------------------------------------------------
 
             const loans =
                 await client.query(`
@@ -997,9 +962,9 @@ router.delete(
                 );
 
 
-            // ==================================================
+            // --------------------------------------------------
             // DELETE EMI SCHEDULE
-            // ==================================================
+            // --------------------------------------------------
 
             if (
                 loanIds.length > 0
@@ -1018,9 +983,9 @@ router.delete(
             }
 
 
-            // ==================================================
+            // --------------------------------------------------
             // DELETE COLLECTIONS
-            // ==================================================
+            // --------------------------------------------------
 
             if (
                 loanIds.length > 0
@@ -1039,30 +1004,9 @@ router.delete(
             }
 
 
-            // ==================================================
-            // DELETE PAYMENTS
-            // ==================================================
-
-            if (
-                loanIds.length > 0
-            ) {
-
-                await client.query(`
-
-                    DELETE FROM payments
-
-                    WHERE loan_id = ANY($1::int[])
-
-                `, [
-                    loanIds
-                ]);
-
-            }
-
-
-            // ==================================================
+            // --------------------------------------------------
             // DELETE REMINDERS
-            // ==================================================
+            // --------------------------------------------------
 
             await client.query(`
 
@@ -1075,9 +1019,9 @@ router.delete(
             ]);
 
 
-            // ==================================================
+            // --------------------------------------------------
             // DELETE LOANS
-            // ==================================================
+            // --------------------------------------------------
 
             await client.query(`
 
@@ -1090,9 +1034,9 @@ router.delete(
             ]);
 
 
-            // ==================================================
+            // --------------------------------------------------
             // DELETE CUSTOMER
-            // ==================================================
+            // --------------------------------------------------
 
             await client.query(`
 
@@ -1105,18 +1049,18 @@ router.delete(
             ]);
 
 
-            // ==================================================
+            // --------------------------------------------------
             // COMMIT
-            // ==================================================
+            // --------------------------------------------------
 
             await client.query(
                 "COMMIT"
             );
 
 
-            // ==================================================
-            // SUCCESS RESPONSE
-            // ==================================================
+            // --------------------------------------------------
+            // SUCCESS
+            // --------------------------------------------------
 
             return res.json({
 
@@ -1143,9 +1087,9 @@ router.delete(
 
         } catch (error) {
 
-            // ==================================================
+            // --------------------------------------------------
             // ROLLBACK
-            // ==================================================
+            // --------------------------------------------------
 
             if (client) {
 
@@ -1166,10 +1110,6 @@ router.delete(
 
             }
 
-
-            // ==================================================
-            // ERROR LOG
-            // ==================================================
 
             console.error(
                 "Delete customer error:",
@@ -1192,10 +1132,6 @@ router.delete(
 
         } finally {
 
-            // ==================================================
-            // RELEASE CONNECTION
-            // ==================================================
-
             if (client) {
 
                 client.release();
@@ -1209,10 +1145,6 @@ router.delete(
 
 
 // ======================================================
-// EXPORT
-// ======================================================
-
-module.exports = router;
 // EXPORT
 // ======================================================
 
