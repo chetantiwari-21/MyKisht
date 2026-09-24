@@ -1,4 +1,4 @@
-const express = require("express");
+      //const express = require("express");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
@@ -68,7 +68,7 @@ router.post("/send-otp", async (req, res) => {
         }
 
 
-        // Generate 6 digit OTP
+ Generate 6 digit OTP
         const otp =
             Math.floor(
                 100000 + Math.random() * 900000
@@ -424,4 +424,4 @@ router.post("/reset-password", async (req, res) => {
 });
 
 
-module.exports = router;
+module.exports = router;  
