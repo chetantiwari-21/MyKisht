@@ -205,6 +205,97 @@
             padding: 35px;
         }
 
+        .manage-customer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--card-light);
+            border-radius: 12px;
+        }
+
+        .delete-btn {
+            border: none;
+            background: #b42318;
+            color: white;
+            padding: 9px 14px;
+            border-radius: 9px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .delete-btn:hover {
+            opacity: 0.9;
+        }
+
+        .delete-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal {
+            width: min(450px, 100%);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
+            box-sizing: border-box;
+        }
+
+        .modal h3 {
+            margin: 0 0 10px;
+        }
+
+        .modal p {
+            color: var(--muted);
+            line-height: 1.5;
+            margin: 8px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-cancel {
+            border: 1px solid var(--border);
+            background: var(--card-light);
+            color: var(--text);
+            padding: 10px 15px;
+            border-radius: 9px;
+            cursor: pointer;
+        }
+
+        .modal-confirm {
+            border: none;
+            background: #b42318;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 9px;
+            cursor: pointer;
+        }
+
+        .modal-confirm:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         @media (max-width: 850px) {
 
             .cards {
@@ -470,6 +561,29 @@
 
         </div>
 
+        <!-- MANAGE CUSTOMERS -->
+
+        <div class="collection-box">
+
+            <h3 class="section-title">
+                Manage Customers
+            </h3>
+
+            <div class="muted" style="margin-bottom:15px;">
+                Cleared loan wale customer ko yahan se permanently delete kar sakte hain.
+            </div>
+
+            <div
+                id="manageCustomerList"
+                class="customer-list"
+            >
+                <div class="loading">
+                    Loading customers...
+                </div>
+            </div>
+
+        </div>
+
 
     </div>
 
@@ -485,7 +599,7 @@
 // BACKEND
 // =====================================================
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://mykisht-backend.onrender.com";
 
 
 // =====================================================
@@ -525,6 +639,318 @@ function openAddLoan() {
 function openCollection() {
 
     window.location.href = "./collection.html";
+
+}
+
+
+// =====================================================
+// DELETE CUSTOMER
+// =====================================================
+
+let customerToDelete = null;
+
+
+function openDeleteModal(customer) {
+
+    customerToDelete = customer;
+
+    const modal =
+        document.getElementById("deleteModal");
+
+    const text =
+        document.getElementById("deleteCustomerText");
+
+    text.innerText =
+        `Customer "${customer.full_name}" (${customer.mobile}) will be permanently deleted.`;
+
+    modal.style.display = "flex";
+
+}
+
+
+function closeDeleteModal(event) {
+
+    if (
+        event &&
+        event.target &&
+        event.target.id !== "deleteModal"
+    ) {
+        return;
+    }
+
+    const modal =
+        document.getElementById("deleteModal");
+
+    modal.style.display = "none";
+
+    customerToDelete = null;
+
+}
+
+
+async function confirmDeleteCustomer() {
+
+    if (!customerToDelete) {
+        return;
+    }
+
+    const customerId =
+        customerToDelete.id;
+
+    const button =
+        document.getElementById("confirmDeleteBtn");
+
+    try {
+
+        button.disabled = true;
+        button.innerText = "Deleting...";
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/admin/customers/" +
+                encodeURIComponent(customerId),
+                {
+                    method: "DELETE",
+
+                    headers: {
+                        "Authorization":
+                            "Bearer " + token,
+
+                        "Content-Type":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        const contentType =
+            response.headers.get("content-type") || "";
+
+
+        let data = {};
+
+        if (
+            contentType.includes(
+                "application/json"
+            )
+        ) {
+
+            data =
+                await response.json();
+
+        } else {
+
+            throw new Error(
+                `Server returned an unexpected response (${response.status}).`
+            );
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Customer delete nahi ho saka."
+            );
+
+        }
+
+
+        closeDeleteModal();
+
+        alert(
+            data.message ||
+            "Customer deleted successfully."
+        );
+
+
+        await loadManageCustomers();
+
+        await loadDashboard();
+loadManageCustomers();
+
+
+    } catch (error) {
+
+        console.error(
+            "Delete customer error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Customer delete nahi ho saka."
+        );
+
+
+    } finally {
+
+        button.disabled = false;
+        button.innerText = "Delete Permanently";
+
+    }
+
+}
+
+
+async function loadManageCustomers() {
+
+    const list =
+        document.getElementById(
+            "manageCustomerList"
+        );
+
+
+    try {
+
+        list.innerHTML = `
+            <div class="loading">
+                Loading customers...
+            </div>
+        `;
+
+
+        const response =
+            await apiRequest(
+                "/api/admin/customers"
+            );
+
+
+        const customers =
+            response.customers ||
+            response.data ||
+            [];
+
+
+        if (
+            !Array.isArray(customers) ||
+            customers.length === 0
+        ) {
+
+            list.innerHTML = `
+                <div class="empty">
+                    Koi customer nahi mila.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        list.innerHTML = "";
+
+
+        customers.forEach(
+            function (customer) {
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                row.className =
+                    "manage-customer-row";
+
+
+                const info =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                info.innerHTML = `
+
+                    <div class="customer-name">
+                        ${escapeHtml(
+                            customer.full_name ||
+                            "Customer"
+                        )}
+                    </div>
+
+                    <div class="customer-info">
+                        ${escapeHtml(
+                            customer.mobile || ""
+                        )}
+                        ${customer.email
+                            ? " • " +
+                              escapeHtml(
+                                  customer.email
+                              )
+                            : ""
+                        }
+                    </div>
+
+                    <div class="customer-info">
+                        Loans:
+                        ${Number(
+                            customer.total_loans || 0
+                        )}
+                    </div>
+
+                `;
+
+
+                const deleteButton =
+                    document.createElement(
+                        "button"
+                    );
+
+
+                deleteButton.type =
+                    "button";
+
+                deleteButton.className =
+                    "delete-btn";
+
+                deleteButton.innerText =
+                    "Delete";
+
+
+                deleteButton.onclick =
+                    function () {
+
+                        openDeleteModal(
+                            customer
+                        );
+
+                    };
+
+
+                row.appendChild(info);
+
+                row.appendChild(
+                    deleteButton
+                );
+
+                list.appendChild(row);
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Load customers error:",
+            error
+        );
+
+
+        list.innerHTML = `
+            <div class="empty">
+                ${escapeHtml(
+                    error.message ||
+                    "Customers load nahi ho sake."
+                )}
+            </div>
+        `;
+
+    }
 
 }
 
@@ -1174,6 +1600,57 @@ loadDashboard();
 
 </script>
 
+
+
+
+<!-- DELETE CONFIRMATION MODAL -->
+
+<div
+    id="deleteModal"
+    class="modal-backdrop"
+    onclick="closeDeleteModal(event)"
+>
+
+    <div
+        class="modal"
+        onclick="event.stopPropagation()"
+    >
+
+        <h3>Delete Customer?</h3>
+
+        <p id="deleteCustomerText">
+            This action cannot be undone.
+        </p>
+
+        <p>
+            Customer ka account aur uske loans, EMI schedule,
+            collections, payments, receipts aur reminders permanently delete ho jayenge.
+        </p>
+
+        <div class="modal-actions">
+
+            <button
+                type="button"
+                class="modal-cancel"
+                onclick="closeDeleteModal()"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                id="confirmDeleteBtn"
+                class="modal-confirm"
+                onclick="confirmDeleteCustomer()"
+            >
+                Delete Permanently
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 
