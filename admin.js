@@ -24,40 +24,29 @@ router.use((req, res, next) => {
         return next();
     }
 
-
     if (req.path === "/dashboard") {
 
         return res.json({
-
             success: true,
-
             dashboard: {
-
                 total_customers: 0,
                 total_loans: 0,
                 total_lent: 0,
                 total_payable: 0,
                 overdue_installments: 0
-
             }
-
         });
 
     }
-
 
     if (req.path === "/customers") {
 
         return res.json({
-
             success: true,
-
             customers: []
-
         });
 
     }
-
 
     if (
         req.path.startsWith("/customers/") &&
@@ -65,15 +54,11 @@ router.use((req, res, next) => {
     ) {
 
         return res.json({
-
             success: true,
-
             emi_schedule: []
-
         });
 
     }
-
 
     next();
 
@@ -206,7 +191,8 @@ router.get(
 
         try {
 
-            const result = await query(`
+            const result =
+                await query(`
 
                 SELECT
 
@@ -444,8 +430,6 @@ router.get(
             } = req.params;
 
 
-            // CHECK LOAN
-
             const loan =
                 await query(`
 
@@ -487,8 +471,6 @@ router.get(
 
             }
 
-
-            // GET EMI SCHEDULE
 
             const result =
                 await query(`
@@ -857,14 +839,19 @@ router.get(
 // ======================================================
 // DELETE CUSTOMER + ALL RELATED DATA
 // ======================================================
-// Permanently deletes:
+//
+// Deletes:
+//
 // Customer
 // Loans
 // EMI schedule
 // Collections
 // Payments
-// Payment receipts
 // Reminders
+//
+// NOTE:
+// payment_receipts is NOT used because
+// that table does not exist in the database.
 // ======================================================
 
 router.delete(
@@ -873,7 +860,7 @@ router.delete(
     requireAdmin,
     async (req, res) => {
 
-        let client;
+        let client = null;
 
         try {
 
@@ -881,6 +868,10 @@ router.delete(
                 customerId
             } = req.params;
 
+
+            // ==================================================
+            // VALIDATE CUSTOMER ID
+            // ==================================================
 
             if (
                 !/^[0-9]+$/.test(
@@ -900,6 +891,10 @@ router.delete(
             }
 
 
+            // ==================================================
+            // DATABASE CHECK
+            // ==================================================
+
             if (!pool) {
 
                 return res.status(503).json({
@@ -914,18 +909,26 @@ router.delete(
             }
 
 
+            // ==================================================
+            // GET DATABASE CLIENT
+            // ==================================================
+
             client =
                 await pool.connect();
 
+
+            // ==================================================
+            // START TRANSACTION
+            // ==================================================
 
             await client.query(
                 "BEGIN"
             );
 
 
-            // ------------------------------------------
+            // ==================================================
             // CHECK CUSTOMER
-            // ------------------------------------------
+            // ==================================================
 
             const customer =
                 await client.query(`
@@ -970,9 +973,9 @@ router.delete(
             }
 
 
-            // ------------------------------------------
-            // GET CUSTOMER LOANS
-            // ------------------------------------------
+            // ==================================================
+            // GET ALL CUSTOMER LOANS
+            // ==================================================
 
             const loans =
                 await client.query(`
@@ -994,9 +997,9 @@ router.delete(
                 );
 
 
-            // ------------------------------------------
+            // ==================================================
             // DELETE EMI SCHEDULE
-            // ------------------------------------------
+            // ==================================================
 
             if (
                 loanIds.length > 0
@@ -1015,9 +1018,9 @@ router.delete(
             }
 
 
-            // ------------------------------------------
+            // ==================================================
             // DELETE COLLECTIONS
-            // ------------------------------------------
+            // ==================================================
 
             if (
                 loanIds.length > 0
@@ -1036,38 +1039,9 @@ router.delete(
             }
 
 
-            // ------------------------------------------
-            // DELETE PAYMENT RECEIPTS
-            // ------------------------------------------
-
-            if (
-                loanIds.length > 0
-            ) {
-
-                await client.query(`
-
-                    DELETE FROM payment_receipts
-
-                    WHERE payment_id IN (
-
-                        SELECT id
-
-                        FROM payments
-
-                        WHERE loan_id = ANY($1::int[])
-
-                    )
-
-                `, [
-                    loanIds
-                ]);
-
-            }
-
-
-            // ------------------------------------------
+            // ==================================================
             // DELETE PAYMENTS
-            // ------------------------------------------
+            // ==================================================
 
             if (
                 loanIds.length > 0
@@ -1086,9 +1060,9 @@ router.delete(
             }
 
 
-            // ------------------------------------------
+            // ==================================================
             // DELETE REMINDERS
-            // ------------------------------------------
+            // ==================================================
 
             await client.query(`
 
@@ -1101,9 +1075,9 @@ router.delete(
             ]);
 
 
-            // ------------------------------------------
+            // ==================================================
             // DELETE LOANS
-            // ------------------------------------------
+            // ==================================================
 
             await client.query(`
 
@@ -1116,9 +1090,9 @@ router.delete(
             ]);
 
 
-            // ------------------------------------------
+            // ==================================================
             // DELETE CUSTOMER
-            // ------------------------------------------
+            // ==================================================
 
             await client.query(`
 
@@ -1131,12 +1105,20 @@ router.delete(
             ]);
 
 
+            // ==================================================
+            // COMMIT
+            // ==================================================
+
             await client.query(
                 "COMMIT"
             );
 
 
-            res.json({
+            // ==================================================
+            // SUCCESS RESPONSE
+            // ==================================================
+
+            return res.json({
 
                 success: true,
 
@@ -1161,6 +1143,10 @@ router.delete(
 
         } catch (error) {
 
+            // ==================================================
+            // ROLLBACK
+            // ==================================================
+
             if (client) {
 
                 try {
@@ -1181,13 +1167,17 @@ router.delete(
             }
 
 
+            // ==================================================
+            // ERROR LOG
+            // ==================================================
+
             console.error(
                 "Delete customer error:",
                 error
             );
 
 
-            res.status(500).json({
+            return res.status(500).json({
 
                 success: false,
 
@@ -1202,6 +1192,10 @@ router.delete(
 
         } finally {
 
+            // ==================================================
+            // RELEASE CONNECTION
+            // ==================================================
+
             if (client) {
 
                 client.release();
@@ -1215,6 +1209,10 @@ router.delete(
 
 
 // ======================================================
+// EXPORT
+// ======================================================
+
+module.exports = router;
 // EXPORT
 // ======================================================
 
