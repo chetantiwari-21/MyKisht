@@ -1,6 +1,10 @@
 const express = require("express");
 
-const { query, isDatabaseReady } = require("./db");
+const {
+    query,
+    isDatabaseReady,
+    pool
+} = require("./db");
 
 const {
     authenticateToken,
@@ -426,9 +430,6 @@ router.get(
 // ======================================================
 // LOAN EMI / INSTALLMENT LIST
 // ======================================================
-// NEW ENDPOINT
-// Used by collection.html
-// ======================================================
 
 router.get(
     "/loans/:loanId/emi",
@@ -443,9 +444,7 @@ router.get(
             } = req.params;
 
 
-            // ------------------------------------------
             // CHECK LOAN
-            // ------------------------------------------
 
             const loan =
                 await query(`
@@ -489,9 +488,7 @@ router.get(
             }
 
 
-            // ------------------------------------------
             // GET EMI SCHEDULE
-            // ------------------------------------------
 
             const result =
                 await query(`
@@ -850,6 +847,366 @@ router.get(
                     "Unable to load overdue list."
 
             });
+
+        }
+
+    }
+);
+
+
+// ======================================================
+// DELETE CUSTOMER + ALL RELATED DATA
+// ======================================================
+// Permanently deletes:
+// Customer
+// Loans
+// EMI schedule
+// Collections
+// Payments
+// Payment receipts
+// Reminders
+// ======================================================
+
+router.delete(
+    "/customers/:customerId",
+    authenticateToken,
+    requireAdmin,
+    async (req, res) => {
+
+        let client;
+
+        try {
+
+            const {
+                customerId
+            } = req.params;
+
+
+            if (
+                !/^[0-9]+$/.test(
+                    String(customerId)
+                )
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Invalid customer ID."
+
+                });
+
+            }
+
+
+            if (!pool) {
+
+                return res.status(503).json({
+
+                    success: false,
+
+                    message:
+                        "Database is unavailable."
+
+                });
+
+            }
+
+
+            client =
+                await pool.connect();
+
+
+            await client.query(
+                "BEGIN"
+            );
+
+
+            // ------------------------------------------
+            // CHECK CUSTOMER
+            // ------------------------------------------
+
+            const customer =
+                await client.query(`
+
+                    SELECT
+
+                        id,
+
+                        full_name,
+
+                        mobile
+
+                    FROM customers
+
+                    WHERE id = $1
+
+                    FOR UPDATE
+
+                `, [
+                    customerId
+                ]);
+
+
+            if (
+                customer.rows.length === 0
+            ) {
+
+                await client.query(
+                    "ROLLBACK"
+                );
+
+
+                return res.status(404).json({
+
+                    success: false,
+
+                    message:
+                        "Customer not found."
+
+                });
+
+            }
+
+
+            // ------------------------------------------
+            // GET CUSTOMER LOANS
+            // ------------------------------------------
+
+            const loans =
+                await client.query(`
+
+                    SELECT id
+
+                    FROM loans
+
+                    WHERE customer_id = $1
+
+                `, [
+                    customerId
+                ]);
+
+
+            const loanIds =
+                loans.rows.map(
+                    loan => loan.id
+                );
+
+
+            // ------------------------------------------
+            // DELETE EMI SCHEDULE
+            // ------------------------------------------
+
+            if (
+                loanIds.length > 0
+            ) {
+
+                await client.query(`
+
+                    DELETE FROM emi_schedule
+
+                    WHERE loan_id = ANY($1::int[])
+
+                `, [
+                    loanIds
+                ]);
+
+            }
+
+
+            // ------------------------------------------
+            // DELETE COLLECTIONS
+            // ------------------------------------------
+
+            if (
+                loanIds.length > 0
+            ) {
+
+                await client.query(`
+
+                    DELETE FROM collections
+
+                    WHERE loan_id = ANY($1::int[])
+
+                `, [
+                    loanIds
+                ]);
+
+            }
+
+
+            // ------------------------------------------
+            // DELETE PAYMENT RECEIPTS
+            // ------------------------------------------
+
+            if (
+                loanIds.length > 0
+            ) {
+
+                await client.query(`
+
+                    DELETE FROM payment_receipts
+
+                    WHERE payment_id IN (
+
+                        SELECT id
+
+                        FROM payments
+
+                        WHERE loan_id = ANY($1::int[])
+
+                    )
+
+                `, [
+                    loanIds
+                ]);
+
+            }
+
+
+            // ------------------------------------------
+            // DELETE PAYMENTS
+            // ------------------------------------------
+
+            if (
+                loanIds.length > 0
+            ) {
+
+                await client.query(`
+
+                    DELETE FROM payments
+
+                    WHERE loan_id = ANY($1::int[])
+
+                `, [
+                    loanIds
+                ]);
+
+            }
+
+
+            // ------------------------------------------
+            // DELETE REMINDERS
+            // ------------------------------------------
+
+            await client.query(`
+
+                DELETE FROM reminders
+
+                WHERE customer_id = $1
+
+            `, [
+                customerId
+            ]);
+
+
+            // ------------------------------------------
+            // DELETE LOANS
+            // ------------------------------------------
+
+            await client.query(`
+
+                DELETE FROM loans
+
+                WHERE customer_id = $1
+
+            `, [
+                customerId
+            ]);
+
+
+            // ------------------------------------------
+            // DELETE CUSTOMER
+            // ------------------------------------------
+
+            await client.query(`
+
+                DELETE FROM customers
+
+                WHERE id = $1
+
+            `, [
+                customerId
+            ]);
+
+
+            await client.query(
+                "COMMIT"
+            );
+
+
+            res.json({
+
+                success: true,
+
+                message:
+                    "Customer and all related data deleted successfully.",
+
+                deleted_customer: {
+
+                    id:
+                        customer.rows[0].id,
+
+                    name:
+                        customer.rows[0].full_name,
+
+                    mobile:
+                        customer.rows[0].mobile
+
+                }
+
+            });
+
+
+        } catch (error) {
+
+            if (client) {
+
+                try {
+
+                    await client.query(
+                        "ROLLBACK"
+                    );
+
+                } catch (rollbackError) {
+
+                    console.error(
+                        "Rollback error:",
+                        rollbackError
+                    );
+
+                }
+
+            }
+
+
+            console.error(
+                "Delete customer error:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Unable to delete customer. No data was deleted.",
+
+                error:
+                    error.message
+
+            });
+
+
+        } finally {
+
+            if (client) {
+
+                client.release();
+
+            }
 
         }
 
