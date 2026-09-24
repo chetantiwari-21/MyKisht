@@ -416,6 +416,15 @@
         </button>
 
 
+        <button
+            type="button"
+            class="action-btn secondary"
+            onclick="openCustomerManager()"
+        >
+            👥 Manage Customers
+        </button>
+
+
     </div>
 
 
@@ -435,6 +444,29 @@
         id="dashboardContent"
         style="display:none;"
     >
+
+        <!-- MANAGE CUSTOMERS -->
+
+        <div id="manageCustomersSection" class="collection-box">
+
+            <h3 class="section-title">
+                Manage Customers
+            </h3>
+
+            <div class="muted" style="margin-bottom:15px;">
+                Yahan sabhi customers dikhenge. Loan clear hone ke baad Delete se customer aur uska related data permanently remove kar sakte hain.
+            </div>
+
+            <div
+                id="manageCustomerList"
+                class="customer-list"
+            >
+                <div class="loading">
+                    Loading customers...
+                </div>
+            </div>
+
+        </div>
 
 
         <!-- SUMMARY -->
@@ -561,28 +593,7 @@
 
         </div>
 
-        <!-- MANAGE CUSTOMERS -->
 
-        <div class="collection-box">
-
-            <h3 class="section-title">
-                Manage Customers
-            </h3>
-
-            <div class="muted" style="margin-bottom:15px;">
-                Cleared loan wale customer ko yahan se permanently delete kar sakte hain.
-            </div>
-
-            <div
-                id="manageCustomerList"
-                class="customer-list"
-            >
-                <div class="loading">
-                    Loading customers...
-                </div>
-            </div>
-
-        </div>
 
 
     </div>
@@ -641,6 +652,25 @@ function openCollection() {
     window.location.href = "./collection.html";
 
 }
+
+
+function openCustomerManager() {
+
+    const section =
+        document.getElementById(
+            "manageCustomersSection"
+        );
+
+    if (section) {
+        section.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+}
+
+
 
 
 // =====================================================
