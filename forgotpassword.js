@@ -68,7 +68,7 @@ router.post("/send-otp", async (req, res) => {
         }
 
 
- Generate 6 digit OTP
+// Generate 6 digit OTP
         const otp =
             Math.floor(
                 100000 + Math.random() * 900000
